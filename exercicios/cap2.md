@@ -17,6 +17,14 @@ Resolução dos exercícios 2.1, 2.8, 2.13, 2.15, 2.18, 2.24 e 2.33 do livro *Fo
 - `S3: x = x - y`;
 
 ### (a) `S1; S2; S3`
+O programa é executado de forma sequencial portanto temos:
+
+1. `S1: x = x + y` $\rightarrow$ `x = 2 + 5` $\rightarrow$ `x = 7` (`x = 7`, `y = 5`);
+2. `S2: y = x - y` $\rightarrow$ `y = 7 - 5` $\rightarrow$ `y = 2` (`x = 7`, `y = 2`);
+3. `S3: x = x - y` $\rightarrow$ `x = 7 - 2` $\rightarrow$ `x = 5` (`x = 5`, `y = 2`);
+
+Portanto o valor final, ilustrado entre parênteses, é `x = 5` e `y = 2`.
+
 ### (b) `co <S_1;> // <S2;> // <S3;> oc`
 ### (c) `co <await (x > y) S1; S2;> // <S3;> oc`
 
