@@ -102,6 +102,13 @@ Assim, temos que ao final da execução do programa $x \in \{-11, 2,5\}$ e $y \i
 
 ### (c) `co <await (x > y) S1; S2;> // <S3;> oc`
 
+Este programa tem 2 processos, cada um com 1 única ação atômica resultando em $2! = 2$ possíveis histórias.
+Entretanto, como ao início do programa a condição `x > y` é falsa não há história que o primeiro processo execute primeiro.
+Portanto, `<S3;>` ocorrerá transformando o estado do programa para `x = -3` e `y = 5` e terminando  o primeiro processo.
+
+Porém, mesmo após `<S3;>` executar a condição `x > y` continua sendo falsa e o segundo processo nunca termina deixando o programa no estado 
+`x = -3` e `y = 5`.
+
 ## 18. Consider the program bellow. For what initial values of `x` does the program terminate, assuming scheduling is weakly fair? What are the corresponding final values? Explain your answer.
 
 ```
