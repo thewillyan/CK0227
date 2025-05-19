@@ -195,9 +195,19 @@ oc
 ```
 
 ### (a) Will the program terminate if scheduling is weakly fair? Explain.
+
+Não, dado que nada garate que o `while` seja executado enquanto `c` ainda seja verdadeiro.
+Um escalonador fracamente justo apenas garante a execução das ações atômicas condicionais
+as quais a condição continua verdadeira até que seja vista pelo escalonador.
+
 ### (b) Will the program terminate if scheduling is strongly fair? Explain.
+
+Não, pois a condição `c` não é incondicionalmente verdadeira.
+
 ### (c) Add the code bellow as a third arm of the `co` statement. Repeat parts (a) and (b) for this three-process program.
 
 ```
 while (c) {if (x < 0) <x = 10>;}
 ```
+
+As respostas continuam as mesmas dado que esse terceiro braço de nada interfere com condição `c`.
