@@ -12,11 +12,115 @@ Resolução dos exercícios 2.1, 2.8, 2.13, 2.15, 2.18, 2.24 e 2.33 do livro *Fo
 
 ## 8. A queue is often represented using a linked list. Assume that two variables, `head` and `tail`, point to the first and last elements of the list. Each element contains a data field and a link to the next element. Assume that a null link is represented by the constant `null`.
 
-### (a) Write routines to (1) search the list for the first element (if any) that contains data value `d`, (2) insert a new element at the end of the list, and (3) delete the element from the front of the list. The search and delete routines should return `null` if they cannot succeed.
+### (a) Write routines to:
+
+**1.** Search the list for the first element (if any) that contains data value `d`. Should return `null` if they cannot succeed.
+
+```
+# receives the searched item d
+link ptr = head;
+
+while (ptr != null) {
+    if (ptr.data == d)
+        break;
+    ptr = ptr.next;
+}
+
+return ptr;
+```
+
+**2.** Insert a new element at the end of the list.
+
+```
+# receives a new element e
+if (tail == null) {
+    head = e;
+    tail = e;
+} else {
+    if (head == tail)
+        head.next = e;
+    tail.next = e;
+    tail = e;
+}
+```
+
+**3.** Delete the element from the front of the list. Should return `null` if they cannot succeed.
+
+```
+int data = tail.data;
+
+if (head == tail)
+    head = null;
+tail = null;
+
+return data;
+```
 
 ### (b) Now assume that several processes access the linked list. Identify the read and write sets of each routine, as defined in (2.1). Which  combinations of routines can be executed in parallel? Which combinations of routines must execute one at a time (i.e., atomically)?
 
+Conjuntos de leitura:
+
+1. Search routine: {`d`, `head`}
+2. Insert routine: {`e`}
+3. Delete routine: {`data`}
+
+Conjuntos de escrita:
+
+1. Search routine: {`ptr`}
+2. Insert routine: {`head`, `tail`}
+3. Delete routine: {`head`, `tail`}
+
+A rotina de pesquisa pode ser executada paralelamente com a rotina de inserção.
+Todas as demais possibilidades devem ser realizadas como ações atômicas.
+
 ### (c) Add synchronization code to the three routines to enforce the synchronization you identified in your answer to (b). Make your atomic actions as small as possible, and do not delay a routine unnecessarily. Use the await statement to program the synchronization code.
+
+**1.** Search the list for the first element (if any) that contains data value `d`. Should return `null` if they cannot succeed.
+
+```
+# receives the searched item d
+link ptr = head;
+
+while (ptr != null and head != null) {
+    if (ptr.data == d)
+        return ptr;
+    if ((ptr == tail or ptr.next == tail) and removing)
+        break;
+    ptr = ptr.next;
+}
+
+return null;
+```
+
+**2.** Insert a new element at the end of the list.
+
+```
+# receives a new element e
+if (tail == null) {
+    <head = e;
+    tail = e;>
+} else {
+    <if (head == tail)
+        head.next = e;
+    tail.next = e;
+    tail = e;>
+}
+```
+
+**3.** Delete the element from the front of the list. Should return `null` if they cannot succeed.
+
+```
+bool removing = true;
+int data = tail.data;
+
+<if (head == tail)
+    head = null;
+tail = null;>
+
+bool removing = false;
+return data;
+```
+
 
 ## 13. Consider the following three statements bellow. Assume that `x` is initially `2` and that `y` is initially `5`. For each of the following, what er the possible final values of `x` and `y`? Explain your answers.
 
