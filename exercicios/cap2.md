@@ -118,6 +118,73 @@ co <await (x > 0) x = x - 1;>
 oc
 ```
 
+
+Para que a condição de término seja atingida é necessário que:
+
+1. As condições $x > 0$, $x < 0$ e $x = 0$ sejam atingidas em algum momento da execução;
+2. Uma vez que sejam atingidas não mudem até que seu processo correspondente seja escolhido pelo escalonador;
+
+Dado que $x > 0$, $x < 0$ e $x = 0$ não podem ser verdade ao mesmo tempo temos que apenas uma delas deve ser verdade no início do programa.
+
+**I. Assumindo que $x > 0$ é verdadeiro:**
+
+Temos que `x = x - 1` é executado e que $x > 0 \Rightarrow x - 1 > -1$.
+Portanto, depois da execução, temos $y > -1$ é verdadeiro, sendo $y$ o novo valor de `x`.
+
+Dado que estamos tentanto atingir o término $y < 0 \vee y = 0$ deve
+ser verdadeiro.
+
+**I.I. Assumindo que $y < 0$ é verdadeiro:**
+
+`x = x + 2` é executado e que $-1 < y < 0$ temos que, após a execução, $1 < z < 2$
+sendo $z$ o novo valor de `x`.
+
+Para que o programa termine é necessário que
+
+$$z = 0 \Rightarrow y + 2 = 0 \Rightarrow x - 1 + 2 = 0 \Rightarrow x = -1$$
+
+**I.II. Assumindo que $y = 0$:**
+
+Assim, temos que $x - 1 = 0 \Rightarrow x = 1$.
+
+Além disso, `x = x - 1` é executado, e assim, $z = -1$, sendo $z$ o novo valor de `x`.
+
+Dado que $z < 0$ o programa termina com $x = 1$.
+
+**II. Assumindo que $x < 0$ é verdadeiro:**
+
+Temos que `x = x + 2 ` é executado e que $y < 2$, sendo $y$ o novo valor de `x`.
+
+Para que haja termino $y > 0 \vee y = 0$ deve ser verdadeiro.
+
+**II.I. Assumindo que $y > 0$ é verdadeiro:**
+
+Temos que `x = x - 1` é executado e que $z > -1$, sendo $z$ o novo valor de `x`.
+
+Para que haja término $z = 0$ deve ser verdadeiro, portanto
+
+$$z = 0 \Rightarrow y - 1 = 0 \Rightarrow x + 2 - 1 = 0 \Rightarrow x = -1$$
+
+**II.II. Assumindo que $y = 0$ é verdadeiro:**
+
+Temos que `x = x - 1` é executado e que $z = -1$, sendo $z$ o novo valor de `x`.
+
+Dessa forma temos
+
+$$z = -1 \Rightarrow y - 1 = -1 \Rightarrow x + 1 - 1 = -1 \Rightarrow x = -1$$
+
+**III. Assumindo que $x = 0$ é verdadeiro:**
+
+Temos que `x = x - 1` é executado, assim $y = -1$, sendo $y$ o novo valor de `x`.
+
+Para que haja término $y > 0 \vee y < 0$ deve ser verdadeira.
+Dado que $y = -1 \Rightarrow y < 0$, `x = x + 2` é executado com $z = 1$, sendo $z$ o novo valor de `x`.
+
+Análogamente $z = 1 \Rightarrow z > 0$, `x = x - 1` é executado, terminando assim o programa para $x = 0$.
+
+**Conclusão:**
+Assim para que o programa termine é necessário que $x \in \{-1, 0, 1\}$.
+
 ## 33. Consider the following program:
 
 ```
