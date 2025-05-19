@@ -10,6 +10,11 @@ output: pdf_document
 
 Resolução dos exercícios 2.1, 2.8, 2.13, 2.15, 2.18, 2.24 e 2.33 do livro *Foundations of Multithreaded, Parallel, and Distributed Programming*.
 
+Alunos:
+
+- Andre Willyan de Sousa Vital 537550  
+- Vitor de Oliveira Veras 520400
+
 ## 1. Consider the outline of the program in Figure 2.1 that prints all the lines in a file that contain pattern.
 
 ### (a) Develop the missing code for synchronizing access to buffer. Use the await statement to program the synchronization code.
@@ -416,13 +421,18 @@ Fazendo a simplificação da pré-condição teremos:
 $$
 \{(x \geq 5)\} \ \langle x = x-4; \rangle \ \{x\geq 5\}
 $$
+
 $$
-\begin{align*}
-&\{x - 4 \geq 5\} \ \langle x = x-4; \rangle \ \{x\geq 5\} \text{(axioma da atribuição)} \\
-&\{x \geq 9\} \ \langle x = x-4; \rangle \ \{x\geq 5\} \text{(simplificação)} \\
-&\{x \geq 5\} \ \langle x = x-4; \rangle \ \{x\geq 5\} \text{(A partir da regra da consequência onde} \ \{x \geq 9 \implies x \geq 5\} \\
-&\text{c.q.d}
-\end{align*}
+\{x - 4 \geq 5\} \ \langle x = x-4; \rangle \ \{x\geq 5\} \text{(axioma da atribuição)}
+$$
+$$
+\{x \geq 9\} \ \langle x = x-4; \rangle \ \{x\geq 5\} \text{(simplificação)}
+$$
+$$
+\{x \geq 5\} \ \langle x = x-4; \rangle \ \{x\geq 5\} \text{(A partir da regra da consequência onde} \ \{x \geq 9 \implies x \geq 5\}
+$$
+$$
+\text{c.q.d}
 $$
 Assim temos que não ocorre interferência!
 
@@ -464,13 +474,19 @@ $$
 Fazendo a simplificação da pré-condição teremos:
 
 $$
-\begin{align*}
-&\{x \geq 10\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \\  
-&\{x - 4 \geq 10\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \text{(axioma da atribuição)} \\
-&\{x \geq 14\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \text{(simplificação)} \\
-&\{x \geq 10\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \text{(A partir da regra da consequência onde} \ \{x \geq 16 \implies x \geq 10\} \\
-&\text{c.q.d}
-\end{align*}
+\{x \geq 10\} \ \langle x = x-4; \rangle \ \{x\geq 10\}
+$$
+$$  
+\{x - 4 \geq 10\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \text{(axioma da atribuição)}
+$$
+$$
+\{x \geq 14\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \text{(simplificação)}
+$$
+$$
+\{x \geq 10\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \text{(A partir da regra da consequência onde} \ \{x \geq 16 \implies x \geq 10\}
+$$
+$$
+\text{c.q.d}
 $$
 
 - $a = \langle x = x-4; \rangle$
@@ -484,13 +500,19 @@ $$
 Fazendo a simplificação da pré-condição teremos:
 
 $$
-\begin{align*}
-&\{x \geq 11\} \ \langle x = x-4; \rangle \ \{x\geq 11\} \\  
-&\{x - 4 \geq 11\} \ \langle x = x-4; \rangle \ \{x\geq 11\} \text{(axioma da atribuição)} \\
-&\{x \geq 15\} \ \langle x = x-4; \rangle \ \{x\geq 11\} \text{(simplificação)} \\
-&\{x \geq 11\} \ \langle x = x-4; \rangle \ \{x\geq 11\} \text{(A partir da regra da consequência onde} \ \{x \geq 15 \implies x \geq 11\} \\
-&\text{c.q.d}
-\end{align*}
+\{x \geq 11\} \ \langle x = x-4; \rangle \ \{x\geq 11\}
+$$
+$$  
+\{x - 4 \geq 11\} \ \langle x = x-4; \rangle \ \{x\geq 11\} \text{(axioma da atribuição)}
+$$
+$$
+\{x \geq 15\} \ \langle x = x-4; \rangle \ \{x\geq 11\} \text{(simplificação)}
+$$
+$$
+\{x \geq 11\} \ \langle x = x-4; \rangle \ \{x\geq 11\} \text{(A partir da regra da consequência onde} \ \{x \geq 15 \implies x \geq 11\}
+$$
+$$
+\text{c.q.d}
 $$
 
 Assim temos a não ocorrência de interferências.
@@ -508,13 +530,19 @@ $$
 Fazendo a simplificação da pré-condição teremos:
 
 $$
-\begin{align*}
-&\{x \geq 10\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \\  
-&\{x - 4 \geq 10\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \text{(axioma da atribuição)} \\
-&\{x \geq 14\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \text{(simplificação)} \\
-&\{x \geq 10\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \text{(A partir da regra da consequência onde} \ \{x \geq 16 \implies x \geq 10\} \\
-&\text{c.q.d}
-\end{align*}
+\{x \geq 10\} \ \langle x = x-4; \rangle \ \{x\geq 10\}
+$$
+$$  
+\{x - 4 \geq 10\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \text{(axioma da atribuição)}
+$$
+$$
+\{x \geq 14\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \text{(simplificação)}
+$$
+$$
+\{x \geq 10\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \text{(A partir da regra da consequência onde} \ \{x \geq 16 \implies x \geq 10\}
+$$
+$$
+\text{c.q.d}
 $$
 
 - $a = \langle x = x-4; \rangle$
@@ -528,13 +556,19 @@ $$
 Fazendo a simplificação da pré-condição teremos:
 
 $$
-\begin{align*}
-&\{x \geq 12\} \ \langle x = x-4; \rangle \ \{x\geq 12\} \\  
-&\{x - 4 \geq 12\} \ \langle x = x-4; \rangle \ \{x\geq 12\} \text{(axioma da atribuição)} \\
-&\{x \geq 16\} \ \langle x = x-4; \rangle \ \{x\geq 12\} \text{(simplificação)} \\
-&\{x \geq 12\} \ \langle x = x-4; \rangle \ \{x\geq 12\} \text{(A partir da regra da consequência onde} \ \{x \geq 16 \implies x \geq 12\} \\
-&\text{c.q.d}
-\end{align*}
+\{x \geq 12\} \ \langle x = x-4; \rangle \ \{x\geq 12\}
+$$
+$$  
+\{x - 4 \geq 12\} \ \langle x = x-4; \rangle \ \{x\geq 12\} \text{(axioma da atribuição)}
+$$
+$$
+\{x \geq 16\} \ \langle x = x-4; \rangle \ \{x\geq 12\} \text{(simplificação)}
+$$
+$$
+\{x \geq 12\} \ \langle x = x-4; \rangle \ \{x\geq 12\} \text{(A partir da regra da consequência onde} \ \{x \geq 16 \implies x \geq 12\}
+$$
+$$
+\text{c.q.d}
 $$
 
 ### (e) `{x is odd} <x = x + 5;> {x is even}`
@@ -550,12 +584,16 @@ $$
 Fazendo a simplificação da pré-condição teremos:
 
 $$
-\begin{align*}
-&\{(x \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\} \\
-&\{(x - 4 \ \text{is odd}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\} \\
-&\{(x \ \text{is odd}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\} \\
-&\{(x \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\} \\
-\end{align*}
+\{(x \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\}
+$$
+$$
+\{(x - 4 \ \text{is odd}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\}
+$$
+$$
+\{(x \ \text{is odd}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\}
+$$
+$$
+\{(x \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\}
 $$
 
 - $a = \langle x = x-4; \rangle$
@@ -569,12 +607,16 @@ $$
 Teremos:
 
 $$
-\begin{align*}
-&\{(x \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is even}\} \\
-&\{(x - 4 \ \text{is even}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is even}\} \\
-&\{(x \ \text{is even}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{x \ \text{is even}\} \\
-&\{(x \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is even}\} \\
-\end{align*}
+\{(x \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is even}\}
+$$
+$$
+\{(x - 4 \ \text{is even}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is even}\}
+$$
+$$
+\{(x \ \text{is even}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{x \ \text{is even}\}
+$$
+$$
+\{(x \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is even}\}
 $$
 
 Temos que não ocorre interferência.
@@ -592,12 +634,16 @@ $$
 Teremos:
 
 $$
-\begin{align*}
-&\{(x \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\} \\
-&\{(x - 4 \ \text{is odd}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\} \\
-&\{(x \ \text{is odd}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\} \\
-&\{(x \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\} \\
-\end{align*}
+\{(x \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\}
+$$
+$$
+\{(x - 4 \ \text{is odd}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\}
+$$
+$$
+\{(x \ \text{is odd}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\}
+$$
+$$
+\{(x \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\}
 $$
 
 - $a = \langle x = x-4; \rangle$
@@ -611,12 +657,16 @@ $$
 Teremos:
 
 $$
-\begin{align*}
-&\{(y \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\} \\
-&\{(y \ \text{is even}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\} \\
-&\{(y \ \text{is even}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\} \\
-&\{(y \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\} \\
-\end{align*}
+\{(y \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\}
+$$
+$$
+\{(y \ \text{is even}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\}
+$$
+$$
+\{(y \ \text{is even}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\}
+$$
+$$
+\{(y \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\}
 $$
 
 ### (g) `{y is odd} <y = y + 1;> {y is even}`
@@ -632,12 +682,16 @@ $$
 Teremos:
 
 $$
-\begin{align*}
-&\{(y \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is odd}\} \\
-&\{(y \ \text{is odd}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is odd}\} \\
-&\{(y \ \text{is odd}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{y \ \text{is odd}\} \\
-&\{(y \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is odd}\} \\
-\end{align*}
+\{(y \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is odd}\}
+$$
+$$
+\{(y \ \text{is odd}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is odd}\}
+$$
+$$
+\{(y \ \text{is odd}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{y \ \text{is odd}\}
+$$
+$$
+\{(y \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is odd}\}
 $$
 
 - $a = \langle x = x-4; \rangle$
@@ -651,12 +705,16 @@ $$
 Teremos:
 
 $$
-\begin{align*}
-&\{(y \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\} \\
-&\{(y \ \text{is even}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\} \\
-&\{(y \ \text{is even}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\} \\
-&\{(y \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\} \\
-\end{align*}
+\{(y \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\}
+$$
+$$
+\{(y \ \text{is even}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\}
+$$
+$$
+\{(y \ \text{is even}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\}
+$$
+$$
+\{(y \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\}
 $$
 
 Não temos interferência.
@@ -674,12 +732,16 @@ $$
 Teremos:
 
 $$
-\begin{align*}
-&\{(x \ \text{is a multiple of 3}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is a multiple of 3}\}   \\
-&\{(x - 4 \ \text{is a multiple of 3}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is a multiple of 3}\} \\
-&\{(x \ \text{is a multiple of 3}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{x \ \text{is a multiple of 3}\} \\
-&\{(x \ \text{is a multiple of 3}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is a multiple of 3}\} \\
-\end{align*}
+\{(x \ \text{is a multiple of 3}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is a multiple of 3}\}  
+$$
+$$
+\{(x - 4 \ \text{is a multiple of 3}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is a multiple of 3}\}
+$$
+$$
+\{(x \ \text{is a multiple of 3}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{x \ \text{is a multiple of 3}\}
+$$
+$$
+\{(x \ \text{is a multiple of 3}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is a multiple of 3}\}
 $$
 
 Nesse caso não é verdade dado que se $x = 9$, temos que após isso $x$ não será um múltiplo de 3!
