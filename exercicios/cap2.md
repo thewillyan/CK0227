@@ -10,6 +10,78 @@ output: pdf_document
 
 Resolução dos exercícios 2.1, 2.8, 2.13, 2.15, 2.18, 2.24 e 2.33 do livro *Foundations of Multithreaded, Parallel, and Distributed Programming*.
 
+## 1. Consider the outline of the program in Figure 2.1 that prints all the lines in a file that contain pattern.
+
+### (a) Develop the missing code for synchronizing access to buffer. Use the await statement to program the synchronization code.
+
+Para desenvolvimento da sincronização é necessário:
+
+```
+string buffer;
+bool done = false;
+bool bufferFull = false;
+co #process 1:
+    string line1;
+    while (true) {
+        <await (bufferFull || done);>
+        if (done) break;
+        line1 = buffer;
+        bufferFull = false;
+        look for pattern in line 1;
+        if (pattern is in line1)
+            write line1;
+    }
+// # process 2:
+    string line2;
+    while(true) {
+        read next line of input into line2;
+        if (EOF) {done = true; brea;}
+        <await (bufferFull == false);>
+        buffer = line 2;
+        bufferFull = true;
+    }
+oc;
+```
+
+### (b) Extend your program so that it reads two files and prints all the lines that contain pattern. Identify the independent activities and use a separate process for each. Show all synchronization code that is required.
+
+```
+string buffer;
+bool doneProcessFile1 = false;
+bool doneProcessFile2 = false;
+bool bufferFull = false;
+co #process 1:
+    string line1;
+    while (true) {
+        <await (buffer || doneProcessFile1 || doneProcessFile2);>
+        if (doneProcessFile1 || doneProcessFile2) break;
+        line1 = buffer;
+        bufferFull = false
+        look for pattern in line1;
+        if (pattern is in line1)
+            write line1;
+    }
+// #process 2:
+    string line2;
+    while(true) {
+        read next line of input into line2;
+        if (EOF) {doneProcessFile1 = true; break;}
+        <await (bufferFull == false);>
+        buffer = line2;
+        bufferFull = true
+    }
+// # process 3:
+    string line3;
+    while(true) {
+        read next line of input into line3;
+        if (EOF) {doneProcessFile2 = true; break;}
+        <await (bufferFull == false);>
+        buffer = line3;
+        bufferFull = true;
+    }
+oc;
+```
+
 ## 8. A queue is often represented using a linked list. Assume that two variables, `head` and `tail`, point to the first and last elements of the list. Each element contains a data field and a link to the next element. Assume that a null link is represented by the constant `null`.
 
 ### (a) Write routines to:
@@ -121,7 +193,6 @@ bool removing = false;
 return data;
 ```
 
-
 ## 13. Consider the following three statements bellow. Assume that `x` is initially `2` and that `y` is initially `5`. For each of the following, what er the possible final values of `x` and `y`? Explain your answers.
 
 - `S1: x = x + y`;
@@ -213,6 +284,22 @@ Portanto, `<S3;>` ocorrerá transformando o estado do programa para `x = -3` e `
 Porém, mesmo após `<S3;>` executar a condição `x > y` continua sendo falsa e o segundo processo nunca termina deixando o programa no estado 
 `x = -3` e `y = 5`.
 
+## 15. Consider the following program:
+
+```
+int x = 0, y = 10; 
+co while (x!=y) x = x + 1; 
+// while (x != y) y = y - 1; 
+oc
+```
+
+### (a) Does the program meet the requirements of the At-Most-Once Property (2.2)? Explain
+A propriedade de *At-Most-Once* não é respeitada dado que em ambos os processos fazem referência para uma variável que é alterada em outro.
+
+### (b) Will the program terminate? Always? Sometimes? Never1 Explain your answer
+
+As vezes. A terminação depende da ordem em que ocorre a execução. Em situações onde a intercalação ocorra até que $x$ e $y$ foquem iguais então o programa irá terminar normalmente, contudo no caso de que um momento onde por emxemplo $x = 4$ e $y = 5$, $x$ poderá passar para $5$ e $y$ para $4$, assim $x > y$, dessa forma teremos então que o programa não vai terminar.
+
 ## 18. Consider the program bellow. For what initial values of `x` does the program terminate, assuming scheduling is weakly fair? What are the corresponding final values? Explain your answer.
 
 ```
@@ -288,6 +375,316 @@ Análogamente $z = 1 \Rightarrow z > 0$, `x = x - 1` é executado, terminando as
 
 **Conclusão:**
 Assim para que o programa termine é necessário que $x \in \{-1, 0, 1\}$.
+
+## 24. Consider the following precondition and assignment statement
+
+```
+{x >= 4} <x = x - 4;>
+```
+
+For each of the following triples, show whether the above statement interferes with the triple:
+
+### (a) `{x >= 0} <x = x + 5;> {x >= 5}`
+- $a = \langle x = x-4; \rangle$
+- $C = \{x \geq 0\}$
+- $pre(a) = \{x \geq 4\}$
+$$
+	NI(a, C): \{(x \geq 0) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x\geq 0\}  
+$$
+Fazendo a simplificação da pré-condição teremos:
+$$
+\{(x \geq 4)\} \ \langle x = x-4; \rangle \ \{x\geq 0\}
+$$
+$$
+\{x - 4 \geq 4\} \ \langle x = x-4; \rangle \ \{x\geq 0\} \text{(axioma da atribuição)}
+$$
+Fazendo a simplificação teremos:
+$$
+\{x \geq 8\} \ \langle x = x-4; \rangle \ \{x\geq 0\}
+$$
+A partir da regra da consequência, para $\{x \geq 8\} \implies \{x \geq 4\}$
+$$
+\therefore \{(x \geq 4)\} \ \langle x = x-4; \rangle \ \{x\geq 0\} \ \text{c.q.d}
+$$
+- $a = \langle x = x-4; \rangle$
+- $C = \{x \geq 5\}$
+- $pre(a) = \{x \geq 4\}$
+$$
+	NI(a, C): \{(x \geq 5) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x\geq 5\}  
+$$
+Fazendo a simplificação da pré-condição teremos:
+$$
+\{(x \geq 5)\} \ \langle x = x-4; \rangle \ \{x\geq 5\}
+$$
+$$
+\begin{align*}
+&\{x - 4 \geq 5\} \ \langle x = x-4; \rangle \ \{x\geq 5\} \text{(axioma da atribuição)} \\
+&\{x \geq 9\} \ \langle x = x-4; \rangle \ \{x\geq 5\} \text{(simplificação)} \\
+&\{x \geq 5\} \ \langle x = x-4; \rangle \ \{x\geq 5\} \text{(A partir da regra da consequência onde} \ \{x \geq 9 \implies x \geq 5\} \\
+&\text{c.q.d}
+\end{align*}
+$$
+Assim temos que não ocorre interferência!
+
+### (b) `{x >= 0} <x = x + 5;> {x >= 0}`
+- $a = \langle x = x-4; \rangle$
+- $C = \{x \geq 0\}$
+- $pre(a) = \{x \geq 4\}$
+$$
+	NI(a, C): \{(x \geq 0) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x\geq 0\}  
+$$
+Fazendo a simplificação da pré-condição teremos:
+$$
+\{(x \geq 4)\} \ \langle x = x-4; \rangle \ \{x\geq 0\}
+$$
+$$
+\{x - 4 \geq 4\} \ \langle x = x-4; \rangle \ \{x\geq 0\} \text{(axioma da atribuição)}
+$$
+Fazendo a simplificação teremos:
+$$
+\{x \geq 8\} \ \langle x = x-4; \rangle \ \{x\geq 0\}
+$$
+A partir da regra da consequência, para $\{x \geq 8\} \implies \{x \geq 4\}$
+$$
+\therefore \{(x \geq 4)\} \ \langle x = x-4; \rangle \ \{x\geq 0\} \ \text{c.q.d}
+$$
+
+Segue a mesma prova anterior, logo não ocorre insterferência!
+
+### (c) `{x >= 10} <x = x + 5;> {x >= 11}`
+
+- $a = \langle x = x-4; \rangle$
+- $C = \{x \geq 10\}$
+- $pre(a) = \{x \geq 4\}$
+
+$$
+	NI(a, C): \{(x \geq 10) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x\geq 10\}  
+$$
+
+Fazendo a simplificação da pré-condição teremos:
+
+$$
+\begin{align*}
+&\{x \geq 10\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \\  
+&\{x - 4 \geq 10\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \text{(axioma da atribuição)} \\
+&\{x \geq 14\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \text{(simplificação)} \\
+&\{x \geq 10\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \text{(A partir da regra da consequência onde} \ \{x \geq 16 \implies x \geq 10\} \\
+&\text{c.q.d}
+\end{align*}
+$$
+
+- $a = \langle x = x-4; \rangle$
+- $C = \{x \geq 11\}$
+- $pre(a) = \{x \geq 4\}$
+
+$$
+	NI(a, C): \{(x \geq 11) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x\geq 11\}  
+$$
+
+Fazendo a simplificação da pré-condição teremos:
+
+$$
+\begin{align*}
+&\{x \geq 11\} \ \langle x = x-4; \rangle \ \{x\geq 11\} \\  
+&\{x - 4 \geq 11\} \ \langle x = x-4; \rangle \ \{x\geq 11\} \text{(axioma da atribuição)} \\
+&\{x \geq 15\} \ \langle x = x-4; \rangle \ \{x\geq 11\} \text{(simplificação)} \\
+&\{x \geq 11\} \ \langle x = x-4; \rangle \ \{x\geq 11\} \text{(A partir da regra da consequência onde} \ \{x \geq 15 \implies x \geq 11\} \\
+&\text{c.q.d}
+\end{align*}
+$$
+
+Assim temos a não ocorrência de interferências.
+
+### (d) `{x >= 10} <x = x + 5;> {x > = 12}`
+
+- $a = \langle x = x-4; \rangle$
+- $C = \{x \geq 10\}$
+- $pre(a) = \{x \geq 4\}$
+
+$$
+	NI(a, C): \{(x \geq 10) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x\geq 10\}  
+$$
+
+Fazendo a simplificação da pré-condição teremos:
+
+$$
+\begin{align*}
+&\{x \geq 10\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \\  
+&\{x - 4 \geq 10\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \text{(axioma da atribuição)} \\
+&\{x \geq 14\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \text{(simplificação)} \\
+&\{x \geq 10\} \ \langle x = x-4; \rangle \ \{x\geq 10\} \text{(A partir da regra da consequência onde} \ \{x \geq 16 \implies x \geq 10\} \\
+&\text{c.q.d}
+\end{align*}
+$$
+
+- $a = \langle x = x-4; \rangle$
+- $C = \{x \geq 12\}$
+- $pre(a) = \{x \geq 4\}$
+
+$$
+	NI(a, C): \{(x \geq 12) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x\geq 12\}  
+$$
+
+Fazendo a simplificação da pré-condição teremos:
+
+$$
+\begin{align*}
+&\{x \geq 12\} \ \langle x = x-4; \rangle \ \{x\geq 12\} \\  
+&\{x - 4 \geq 12\} \ \langle x = x-4; \rangle \ \{x\geq 12\} \text{(axioma da atribuição)} \\
+&\{x \geq 16\} \ \langle x = x-4; \rangle \ \{x\geq 12\} \text{(simplificação)} \\
+&\{x \geq 12\} \ \langle x = x-4; \rangle \ \{x\geq 12\} \text{(A partir da regra da consequência onde} \ \{x \geq 16 \implies x \geq 12\} \\
+&\text{c.q.d}
+\end{align*}
+$$
+
+### (e) `{x is odd} <x = x + 5;> {x is even}`
+
+- $a = \langle x = x-4; \rangle$
+- $C = \{x \ \text{is odd}\}$
+- $pre(a) = \{x \geq 4\}$
+
+$$
+	NI(a, C): \{(x \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\}  
+$$
+
+Fazendo a simplificação da pré-condição teremos:
+
+$$
+\begin{align*}
+&\{(x \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\} \\
+&\{(x - 4 \ \text{is odd}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\} \\
+&\{(x \ \text{is odd}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\} \\
+&\{(x \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\} \\
+\end{align*}
+$$
+
+- $a = \langle x = x-4; \rangle$
+- $C = \{x \ \text{is even}\}$
+- $pre(a) = \{x \geq 4\}$
+
+$$
+	NI(a, C): \{(x \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is even}\}  
+$$
+
+Teremos:
+
+$$
+\begin{align*}
+&\{(x \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is even}\} \\
+&\{(x - 4 \ \text{is even}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is even}\} \\
+&\{(x \ \text{is even}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{x \ \text{is even}\} \\
+&\{(x \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is even}\} \\
+\end{align*}
+$$
+
+Temos que não ocorre interferência.
+
+### (f) `{x is odd} <y = X + 1> {y is even}`
+
+- $a = \langle x = x-4; \rangle$
+- $C = \{x \ \text{is odd}\}$
+- $pre(a) = \{x \geq 4\}$
+
+$$
+	NI(a, C): \{(x \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\}  
+$$
+
+Teremos:
+
+$$
+\begin{align*}
+&\{(x \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\} \\
+&\{(x - 4 \ \text{is odd}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\} \\
+&\{(x \ \text{is odd}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\} \\
+&\{(x \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is odd}\} \\
+\end{align*}
+$$
+
+- $a = \langle x = x-4; \rangle$
+- $C = \{y \ \text{is even}\}$
+- $pre(a) = \{x \geq 4\}$
+
+$$
+	NI(a, C): \{(y \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\}  
+$$
+
+Teremos:
+
+$$
+\begin{align*}
+&\{(y \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\} \\
+&\{(y \ \text{is even}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\} \\
+&\{(y \ \text{is even}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\} \\
+&\{(y \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\} \\
+\end{align*}
+$$
+
+### (g) `{y is odd} <y = y + 1;> {y is even}`
+
+- $a = \langle x = x-4; \rangle$
+- $C = \{y \ \text{is odd}\}$
+- $pre(a) = \{x \geq 4\}$
+
+$$
+	NI(a, C): \{(y \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is odd}\}  
+$$
+
+Teremos:
+
+$$
+\begin{align*}
+&\{(y \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is odd}\} \\
+&\{(y \ \text{is odd}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is odd}\} \\
+&\{(y \ \text{is odd}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{y \ \text{is odd}\} \\
+&\{(y \ \text{is odd}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is odd}\} \\
+\end{align*}
+$$
+
+- $a = \langle x = x-4; \rangle$
+- $C = \{y \ \text{is even}\}$
+- $pre(a) = \{x \geq 4\}$
+
+$$
+	NI(a, C): \{(y \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\}  
+$$
+
+Teremos:
+
+$$
+\begin{align*}
+&\{(y \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\} \\
+&\{(y \ \text{is even}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\} \\
+&\{(y \ \text{is even}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\} \\
+&\{(y \ \text{is even}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{y \ \text{is even}\} \\
+\end{align*}
+$$
+
+Não temos interferência.
+
+### (h) `{x is a multiple of 3} y = x; {y is a multiple of 3}`
+
+- $a = \langle x = x-4; \rangle$
+- $C = \{x \ \text{is a multiple of 3}\}$
+- $pre(a) = \{x \geq 4\}$
+
+$$
+	NI(a, C): \{(x \ \text{is a multiple of 3}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is a multiple of 3}\}  
+$$
+
+Teremos:
+
+$$
+\begin{align*}
+&\{(x \ \text{is a multiple of 3}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is a multiple of 3}\}   \\
+&\{(x - 4 \ \text{is a multiple of 3}) \ \text{e} \ (x - 4 \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is a multiple of 3}\} \\
+&\{(x \ \text{is a multiple of 3}) \ \text{e} \ (x \geq 8)\} \ \langle x = x-4; \rangle \ \{x \ \text{is a multiple of 3}\} \\
+&\{(x \ \text{is a multiple of 3}) \ \text{e} \ (x \geq 4)\} \ \langle x = x-4; \rangle \ \{x \ \text{is a multiple of 3}\} \\
+\end{align*}
+$$
+
+Nesse caso não é verdade dado que se $x = 9$, temos que após isso $x$ não será um múltiplo de 3!
+
+Logo teremos a interferência.
 
 ## 33. Consider the following program:
 
