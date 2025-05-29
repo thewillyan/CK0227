@@ -23,7 +23,7 @@ process T {
 
 #set align(center)
 
-#image("image.png")
+#image("imgs/graphQ44.png")
 
 #set align(left)
 
