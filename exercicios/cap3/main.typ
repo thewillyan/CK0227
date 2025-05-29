@@ -60,4 +60,4 @@ A propriedade de espera desnecessária (_unecessary delay_) é preservada dado q
 
 A propriedade de entrada eventual (_eventual entry_) é assegurada quando é presente no algoritmo a troca dos valores das variáveis que fazem com que o valor em espera possa finalmente entrar na seção crítica, sem essa linha o processo ficaria em espera indefinida.
 
-No caso de um processo em espera de entrar na sua vez ser ultrapassado por outro nessa solução nenhum, dado que quando o processo da vez altera o valor de `enter` o outro processo já pode sair do loop atualizando o outro valor de `enter` para que o antigo processo quando reiniciar entre em loop.  
+No caso de um processo em espera de entrar na sua vez ser ultrapassado por outro nessa solução nenhum, dado que quando o processo da vez altera o valor de `enter` o outro processo já pode sair do loop atualizando o outro valor de `enter` para que o antigo processo quando reiniciar entre em loop.
