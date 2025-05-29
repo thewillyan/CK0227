@@ -54,4 +54,10 @@ while (turn == 1) skip;
 
 Enquanto isso `P1` poderá seguir para sua seção crítica, onde fará com que `enter1 = false` e que `turn = 2`, nesse momento ele vai sair da sua seção crítica, enquanto que isso `P2` terá saído do loop e feito com que `enter2 = true`, `P1` terá recomeçado e assim como ocorreu com `P2` inicialmente ele entrará em um loop. `P2` então entrará em sua seção crítica, após isso será realizado `enter2 = false` e `turn = 1` de forma com que será reiniciado novamente.
 
-A propriedade de evitar _deadlocks_ (_avoid deadlocks_)
+A propriedade de evitar _deadlocks_ (_avoid deadlocks_) é presetvada de forma na utilização da variável `enter` que faz com que o processo que não está na vez fique preso em um `while` até que um deles troque o valor e dê a vez para o outro processo.
+
+A propriedade de espera desnecessária (_unecessary delay_) é preservada dado que assim que um processo termina de sair da seção crítica o outro processo que estava dentro do `while` já tem permissão de entrar dado a atualização das variáveis `enter` e `turn`.
+
+A propriedade de entrada eventual (_eventual entry_) é assegurada quando é presente no algoritmo a troca dos valores das variáveis que fazem com que o valor em espera possa finalmente entrar na seção crítica, sem essa linha o processo ficaria em espera indefinida.
+
+No caso de um processo em espera de entrar na sua vez ser ultrapassado por outro nessa solução nenhum, dado que quando o processo da vez altera o valor de `enter` o outro processo já pode sair do loop atualizando o outro valor de `enter` para que o antigo processo quando reiniciar entre em loop.  
