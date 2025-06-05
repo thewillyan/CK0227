@@ -1,0 +1,29 @@
+livro-texto:
+  type: Book
+  title: Foundations of Multithreaded, Parallel, and Distributed Programming
+  author: Andrews, Gregory R.
+  page-total: 664
+  date: 2000
+  serial-number:
+    isbn: "0-201-35752-6"
+
+patil1971:
+  type: report
+  author: Patil, Suhas S.
+  title: Limitations and Capabilities of Dijkstra's Semaphore Primitives for Coordination among Processes
+  institution: MIT, Project MAC, Computation Structures Group
+  number: Memo 57
+  date: 1971-02
+  url: https://wiki.eecs.yorku.ca/course_archive/2014-15/W/6490A/_media/public:patil.pdf  # Replace with actual URL if available
+  accessed: 2022-02-20
+
+parnas1975:
+  type: article
+  author: Parnas, David L.
+  title: On a solution to the cigarette smokers' problem (without conditional statements)
+  journal: Communications of the ACM
+  volume: 18
+  number: 3
+  pages: 181-183
+  date: 1975-03
+  doi: 10.1145/360680.360709
