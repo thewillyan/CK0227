@@ -8,3 +8,8 @@ Alunos:
 - Vitor de Oliveira Veras 520400
 
 #include "q31.typ"
+#include "q38.typ"
+#include "q39.typ"
+#include "q311.typ"
+#include "q319.typ"
+
