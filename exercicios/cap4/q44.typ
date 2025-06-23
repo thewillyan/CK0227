@@ -29,27 +29,56 @@ Minimize the number of semaphores that you use, and do not impose constraints no
 
 #codly(languages: codly-languages)
 ```
+sem S1 = 0,
+    S2 = 0,
+    S3 = 0,
+    S4 = 0,
 process T1 {
-  V(t1);
+  body of the task;
+  V(S1);
 }
 
 process T2 {
-  V(t2); P(t1); 
+  P(S1);
+  body of the task;
+  V(S2);
 }
 
 process T3 {
-  P(t1); V(t3);
+  P(S1);
+  body of the task;
+  V(S3);
 }
 
 process T4 {
-  P(t2); V(t3);
+  P(S2);
+  body of the task;
+  V(S4);
 }
 
 process T5 {
-  P(t3); P(t3);
+  P(S3);
+  P(S4);
+  body of the task;
 }
 ```
 
 === b) Describe how to synchronize processes, given an arbitrary precedence graph. In particular, devise a general method for assigning semaphores to edges or processes and for using them. Do not try to use the absolute minimum number of semaphores since determining that is an NP-hard problem for an arbitrary precedence graph!
 
 === Resposta
+
+#codly(languages: codly-languages)
+```
+process T[i = 1 to M] {
+  for (j = 1 to N) {
+    if (m[i][j]) {
+  for (j = 1 to N) {
+    if (m[i][j]) {
+      P(S[j]);
+      P(S[j]);
+    }
+  }
+  body of the task;
+  V(S[i]);
+}
+```
