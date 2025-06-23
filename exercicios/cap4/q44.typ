@@ -72,9 +72,6 @@ process T5 {
 process T[i = 1 to M] {
   for (j = 1 to N) {
     if (m[i][j]) {
-  for (j = 1 to N) {
-    if (m[i][j]) {
-      P(S[j]);
       P(S[j]);
     }
   }
