@@ -93,6 +93,7 @@ TEST_SUITE("Monitor Tests") {
   TEST_CASE("Multiple Threads Coordination") {
     Monitor monitor;
     Monitor::ConditionVariable cv;
+    bool go = false;
     int counter = 0;
     constexpr int THREAD_COUNT = 10;
     std::vector<std::thread> threads;
@@ -102,7 +103,7 @@ TEST_SUITE("Monitor Tests") {
       threads.emplace_back([&] {
         auto lock = monitor.enter();
         ready++;
-        cv.wait(lock, [&] { return counter == 1; });
+        cv.wait(lock, [&] { return go; });
         counter++;
       });
     }
@@ -113,14 +114,14 @@ TEST_SUITE("Monitor Tests") {
 
     {
       auto lock = monitor.enter();
-      counter = 1;
+      go = true;
     }
     cv.notify_all();
 
     for (auto &t : threads)
       t.join();
 
-    CHECK(counter == THREAD_COUNT + 1);
+    CHECK(counter == THREAD_COUNT);
   }
 
   TEST_CASE("Concurrent Access Protection") {
