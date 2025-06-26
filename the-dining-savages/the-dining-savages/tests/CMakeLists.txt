@@ -1,5 +1,6 @@
 set(TestsToRun
     "${CMAKE_CURRENT_SOURCE_DIR}/Semaphore.test.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/Monitor.test.cpp"
 )
 
 foreach(test ${TestsToRun})

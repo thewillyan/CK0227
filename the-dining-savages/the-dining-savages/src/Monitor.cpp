@@ -1,7 +1,7 @@
 #include "Monitor.hpp"
 
 // ConditionVariable Implementation
-void TDS::Monitor::ConditionVariable::wait(std::unique_lock<std::mutex>& lock) {
+void TDS::Monitor::ConditionVariable::wait(std::unique_lock<std::mutex> &lock) {
   cv_.wait(lock);
 }
 
