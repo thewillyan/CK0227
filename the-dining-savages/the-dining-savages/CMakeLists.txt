@@ -9,6 +9,8 @@ add_library(TheDiningSavagesLib
     "${CMAKE_CURRENT_SOURCE_DIR}/src/CookWSemaphore.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/Monitor.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/Monitor.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/Camp.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/Camp.cpp"
 
 )
 

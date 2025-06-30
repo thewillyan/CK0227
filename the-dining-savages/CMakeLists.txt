@@ -12,4 +12,8 @@ enable_testing()
 add_library(Doctest INTERFACE)
 target_include_directories(Doctest INTERFACE "${CMAKE_SOURCE_DIR}/lib/doctest")
 
+add_library(CLI11 INTERFACE)
+target_include_directories(CLI11 INTERFACE "${CMAKE_SOURCE_DIR}/lib/CLI11")
+
 add_subdirectory(the-dining-savages)
+add_subdirectory(exe)
