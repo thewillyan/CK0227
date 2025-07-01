@@ -1,10 +1,8 @@
+#include <CLI11/CLI11.hpp>
 #include <chrono>
 #include <climits>
 #include <memory>
 #include <stop_token>
-#include <thread>
-
-#include <CLI11/CLI11.hpp>
 
 #include "Camp.hpp"
 #include "CookWMonitor.hpp"
@@ -12,6 +10,62 @@
 #include "SavageWMonitor.hpp"
 
 #define TDS_VERSION "0.1.0"
+
+template <typename Duration>
+void monitor_pot(std::shared_ptr<std::atomic_uint> servings, uint max_servings,
+                 const Duration &time_listening) {
+  using namespace std::chrono;
+  auto start = steady_clock::now();
+  uint current_count = servings->load();
+  uint refilled_count = current_count == max_servings ? 1 : 0;
+
+  // Precompute formatting parameters
+  const int servings_width = std::to_string(max_servings).size();
+  const std::string header =
+      "Servings:   / " + std::to_string(max_servings) + " | Refilled: ";
+  const int refill_padding = 5; // Allow up to 5 digits for refill count
+
+  // Format initial display
+  std::cout << header << std::setw(refill_padding) << refilled_count
+            << std::flush;
+  size_t last_length = header.size() + refill_padding;
+
+  while (steady_clock::now() - start < time_listening) {
+    uint new_count = servings->load();
+
+    if (new_count != current_count) {
+      // Update refill counter if servings increased
+      if (current_count < new_count) {
+        refilled_count++;
+      }
+
+      // Build new display string
+      std::ostringstream display;
+      display << "\rServings: " << std::setw(servings_width) << new_count << "/"
+              << max_servings << " | Refilled: " << std::setw(refill_padding)
+              << refilled_count;
+
+      // Update display with padding to cover previous output
+      std::string display_str = display.str();
+      std::cout << display_str << std::flush;
+
+      // Pad with spaces if new output is shorter
+      if (display_str.size() < last_length) {
+        std::cout << std::string(last_length - display_str.size(), ' ');
+      }
+
+      // Update tracking variables
+      last_length = std::max(display_str.size(), last_length);
+      current_count = new_count;
+    }
+
+    // Reduce CPU usage
+    std::this_thread::sleep_for(10ms);
+  }
+
+  // Clear final line before exit
+  std::cout << "\r" << std::string(last_length, ' ') << "\r" << std::flush;
+}
 
 int main(int argc, char **argv) {
   CLI::App app("The Dining Savages problem");
@@ -48,7 +102,7 @@ int main(int argc, char **argv) {
 
   // camp thread manager
   TDS::Camp camp{n_savages, savage_func, cook};
-  std::this_thread::sleep_for(std::chrono::milliseconds{500});
+  monitor_pot(servings, max_serving, std::chrono::seconds{10});
   camp.stop_all();
 
   return 0;
