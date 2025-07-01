@@ -1,17 +1,13 @@
 #include "Monitor.hpp"
 
 // ConditionVariable Implementation
-void TDS::Monitor::ConditionVariable::wait(std::unique_lock<std::mutex> &lock) {
+void TDS::ConditionVariable::wait(std::unique_lock<std::mutex> &lock) {
   cv_.wait(lock);
 }
 
-void TDS::Monitor::ConditionVariable::notify_one() noexcept {
-  cv_.notify_one();
-}
+void TDS::ConditionVariable::notify_one() noexcept { cv_.notify_one(); }
 
-void TDS::Monitor::ConditionVariable::notify_all() noexcept {
-  cv_.notify_all();
-}
+void TDS::ConditionVariable::notify_all() noexcept { cv_.notify_all(); }
 
 // Monitor Implementation
 std::unique_lock<std::mutex> TDS::Monitor::enter() {
