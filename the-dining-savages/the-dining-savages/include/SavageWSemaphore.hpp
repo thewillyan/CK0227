@@ -5,6 +5,7 @@
 namespace TDS {
 class SavageWSemaphore {
 public:
+  long int id;
   Semaphore *mutex;
   Semaphore *semEat;
   Semaphore *semWakeCook;
@@ -12,8 +13,8 @@ public:
   Pot *pot;
 
 public:
-  SavageWSemaphore(Semaphore *mutex, Semaphore *semEat, Semaphore *semWakeCook,
-                   Semaphore *semEmpty, Pot *pot);
+  SavageWSemaphore(long int id, Semaphore *mutex, Semaphore *semEat,
+                   Semaphore *semWakeCook, Semaphore *semEmpty, Pot *pot);
 
 public:
   void eat();
