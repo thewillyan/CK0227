@@ -20,7 +20,7 @@ public:
    */
   void verhogen();
 
-private:
+public:
   int counter_;
   pthread_mutex_t mutex_;
   pthread_cond_t cond_;

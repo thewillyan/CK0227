@@ -5,15 +5,18 @@
 namespace TDS {
 class CookWSemaphore {
 public:
-  Pot pot;
-  Semaphore wake;
-  Semaphore eat;
+  Pot *pot;
+  Semaphore *semWake;
+  Semaphore *semEat;
+  Semaphore *semEmpty;
 
 public:
-  CookWSemaphore(Semaphore wake, Semaphore eat, Pot pot);
+  CookWSemaphore(Semaphore *semWake, Semaphore *semEat, Semaphore *semEmpty,
+                 Pot *pot);
 
 public:
   void refill();
+  void run();
 };
 
 } // namespace TDS

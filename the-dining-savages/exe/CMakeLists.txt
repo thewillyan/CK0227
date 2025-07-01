@@ -1,5 +1,5 @@
 add_executable(TDS
-  "${CMAKE_CURRENT_SOURCE_DIR}/tds.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/tdsSemaph.cpp"
 )
 
 # Define executable output directory
