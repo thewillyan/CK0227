@@ -1,7 +1,8 @@
 #include "Camp.hpp"
-#include <iostream>
 
-Camp::Camp(int num_savages, std::function<void(std::stop_token)> savage_func) {
+TDS::Camp::Camp(int num_savages,
+                std::function<void(std::stop_token)> savage_func,
+                std::function<void(std::stop_token)> cook_func) {
   // Create savage threads first (exception-safe)
   savage_threads_.reserve(num_savages);
   for (int i = 0; i < num_savages; ++i) {
@@ -9,39 +10,16 @@ Camp::Camp(int num_savages, std::function<void(std::stop_token)> savage_func) {
   }
 
   // Start cook thread after object is fully constructed
-  cook_thread_ = std::jthread(&Camp::cook_thread_func, this);
+  cook_thread_ = std::jthread(cook_func);
 }
 
-Camp::~Camp() {
+TDS::Camp::~Camp() {
   if (!stop_requested_) {
     stop_all();
   }
 }
 
-void Camp::cook_thread_func(std::stop_token st) {
-  std::cout << "Cook started\n";
-
-  while (!st.stop_requested()) {
-    // Wait for notification or stop request
-    std::unique_lock lock(mutex_);
-    cv_.wait(lock, [&] { return cook_woken_ || st.stop_requested(); });
-
-    if (st.stop_requested())
-      break;
-
-    // Reset wake flag
-    cook_woken_ = false;
-    lock.unlock();
-
-    // Perform cook task
-    task_counter_++;
-    std::cout << "Cook performed task #" << task_counter_.load() << "\n";
-  }
-
-  std::cout << "Cook exiting\n";
-}
-
-void Camp::stop_all() {
+void TDS::Camp::stop_all() {
   if (stop_requested_.exchange(true))
     return;
 
@@ -66,18 +44,3 @@ void Camp::stop_all() {
     }
   }
 }
-
-void Camp::task() {
-  // Early exit if stop requested
-  if (stop_requested_) {
-    return;
-  }
-
-  {
-    std::lock_guard lock(mutex_);
-    cook_woken_ = true;
-  }
-  cv_.notify_one();
-}
-
-int Camp::get_task_count() const { return task_counter_.load(); }
