@@ -26,7 +26,7 @@ TEST_SUITE("Monitor Tests") {
 
   TEST_CASE("Condition Variable - Predicated Wait") {
     Monitor monitor;
-    Monitor::ConditionVariable cv;
+    ConditionVariable cv;
     bool flag = false;
     std::atomic<bool> started{false};
 
@@ -62,7 +62,7 @@ TEST_SUITE("Monitor Tests") {
 
   TEST_CASE("Condition Variable - Basic Wait") {
     Monitor monitor;
-    Monitor::ConditionVariable cv;
+    ConditionVariable cv;
     bool flag = false;
     std::atomic<bool> started{false};
 
@@ -92,7 +92,7 @@ TEST_SUITE("Monitor Tests") {
 
   TEST_CASE("Multiple Threads Coordination") {
     Monitor monitor;
-    Monitor::ConditionVariable cv;
+    ConditionVariable cv;
     bool go = false;
     int counter = 0;
     constexpr int THREAD_COUNT = 10;

@@ -10,45 +10,52 @@ public:
   ~Monitor() = default;
 
   // Delete copy and move operations
-  Monitor(const Monitor&) = delete;
-  Monitor& operator=(const Monitor&) = delete;
-  Monitor(Monitor&&) = delete;
-  Monitor& operator=(Monitor&&) = delete;
-
-  class ConditionVariable {
-  public:
-    ConditionVariable() = default;
-    ~ConditionVariable() = default;
-
-    // Delete copy and move operations
-    ConditionVariable(const ConditionVariable&) = delete;
-    ConditionVariable& operator=(const ConditionVariable&) = delete;
-    ConditionVariable(ConditionVariable&&) = delete;
-    ConditionVariable& operator=(ConditionVariable&&) = delete;
-
-    // Templated wait with predicate (spurious wakeup protection)
-    template <typename Predicate>
-    void wait(std::unique_lock<std::mutex>& lock, Predicate pred) {
-      cv_.wait(lock, pred);
-    }
-
-    // Basic wait (non-predicated)
-    void wait(std::unique_lock<std::mutex>& lock);
-
-    void notify_one() noexcept;
-    void notify_all() noexcept;
-
-  private:
-    std::condition_variable cv_;
-  };
+  Monitor(const Monitor &) = delete;
+  Monitor &operator=(const Monitor &) = delete;
+  Monitor(Monitor &&) = delete;
+  Monitor &operator=(Monitor &&) = delete;
 
   // Blocking lock acquisition
   [[nodiscard]] std::unique_lock<std::mutex> enter();
-  
+
   // Non-blocking lock attempt
   [[nodiscard]] std::unique_lock<std::mutex> try_enter();
 
 private:
   std::mutex monitor_mutex_;
+};
+
+class ConditionVariable {
+public:
+  ConditionVariable() = default;
+  ~ConditionVariable() = default;
+
+  // Delete copy and move operations
+  ConditionVariable(const ConditionVariable &) = delete;
+  ConditionVariable &operator=(const ConditionVariable &) = delete;
+  ConditionVariable(ConditionVariable &&) = delete;
+  ConditionVariable &operator=(ConditionVariable &&) = delete;
+
+  // Templated wait with predicate (spurious wakeup protection)
+  template <typename Predicate>
+  void wait(std::unique_lock<std::mutex> &lock, Predicate pred) {
+    cv_.wait(lock, pred);
+  }
+
+  // Templated wait with predicated and stop token
+  template <typename Predicate>
+  bool wait(std::unique_lock<std::mutex> &lock, std::stop_token st,
+            Predicate pred) {
+    return cv_.wait(lock, st, pred);
+  }
+
+  // Basic wait (non-predicated)
+  void wait(std::unique_lock<std::mutex> &lock);
+
+  void notify_one() noexcept;
+  void notify_all() noexcept;
+
+private:
+  std::condition_variable_any cv_;
 };
 } // namespace TDS
