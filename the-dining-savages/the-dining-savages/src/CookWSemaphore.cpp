@@ -1,0 +1,18 @@
+#include "CookWSemaphore.hpp"
+#include <cstdio>
+
+TDS::CookWSemaphore::CookWSemaphore(Semaphore *semWake, Semaphore *semEat,
+                                    Semaphore *semEmpty, Pot *pot)
+    : semWake(semWake), semEat(semEat), semEmpty(semEmpty), pot(pot) {}
+
+void TDS::CookWSemaphore::refill() { this->pot->available = this->pot->m; }
+void TDS::CookWSemaphore::run() {
+  while (true) {
+    this->semWake->proberen();
+    printf("Cook thread: Refilling pot\n");
+    this->refill();
+    for (int i = 0; i < this->pot->m; ++i)
+      this->semEat->verhogen();
+    this->semEmpty->verhogen();
+  }
+}
