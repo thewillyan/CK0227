@@ -1,0 +1,19 @@
+[package]
+name = "probecho"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.98"
+clap = { version = "4.5.40", features = ["derive"] }
+iceoryx2 = "0.6.1"
+nix = { version = "0.30.1", features = ["signal"] }
+thiserror = "2.0.12"
+
+[[bin]]
+name = "ping-pong"
+path = "bin/ping_pong.rs"
+
+[[bin]]
+name = "ping-pong-node"
+path = "bin/ping_pong_node.rs"
