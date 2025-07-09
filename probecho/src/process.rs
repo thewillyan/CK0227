@@ -2,15 +2,11 @@ use std::time::Duration;
 
 use iceoryx2::{
     node::{NodeCreationFailure, NodeWaitFailure},
-    port::{
-        publisher::{Publisher, PublisherCreateError},
-        subscriber::{Subscriber, SubscriberCreateError},
-    },
+    port::{client::Client, server::Server},
     prelude::*,
     service::{
-        builder::publish_subscribe::{
-            PublishSubscribeOpenError, PublishSubscribeOpenOrCreateError,
-        },
+        builder::request_response::{RequestResponseCreateError, RequestResponseOpenError},
+        port_factory::{client::ClientCreateError, server::ServerCreateError},
         service_name::ServiceNameError,
     },
 };
@@ -24,13 +20,13 @@ pub enum NsbNodeBuildError {
     #[error(transparent)]
     InvalidServiceName(ServiceNameError),
     #[error(transparent)]
-    ServiceOpenOrCreationFailure(PublishSubscribeOpenOrCreateError),
+    ServiceCreateError(RequestResponseCreateError),
     #[error(transparent)]
-    ServiceOpenFailure(PublishSubscribeOpenError),
+    ServiceOpenError(RequestResponseOpenError),
     #[error(transparent)]
-    PublisherCreationFailure(PublisherCreateError),
+    ServerCreateError(ServerCreateError),
     #[error(transparent)]
-    SubscriberCreationFailure(SubscriberCreateError),
+    ClientCreateError(ClientCreateError),
     #[error(transparent)]
     WaitFailure(NodeWaitFailure),
 }
@@ -39,7 +35,7 @@ pub enum NsbNodeBuildError {
 #[derive(Debug, Clone)]
 pub struct NsbNodeBuilder {
     id: usize,
-    neighboors: Vec<usize>,
+    neighbors: Vec<usize>,
     config: Config,
 }
 
@@ -48,14 +44,14 @@ impl NsbNodeBuilder {
     pub fn new(id: usize) -> Self {
         Self {
             id,
-            neighboors: Vec::new(),
+            neighbors: Vec::new(),
             config: Config::default(),
         }
     }
 
     /// Sets the neighborhood of the node.
-    pub fn with_neighboors(mut self, neighboors: Vec<usize>) -> Self {
-        self.neighboors = neighboors;
+    pub fn with_neighboors(mut self, neighbors: Vec<usize>) -> Self {
+        self.neighbors = neighbors;
         self
     }
 
@@ -73,11 +69,24 @@ impl NsbNodeBuilder {
             .map_err(NsbNodeBuildError::InvalidServiceName)
     }
 
-    /// Build a new `NsbNode`.
-    pub fn build<P, H>(mut self) -> Result<NsbNode<P, H>, NsbNodeBuildError>
+    /// Build an new `NsbNode`.
+    pub fn build<Req, Resp>(self) -> Result<NsbNode<Req, (), Resp, ()>, NsbNodeBuildError>
     where
-        P: ZeroCopySend + std::fmt::Debug + 'static,
-        H: ZeroCopySend + std::fmt::Debug + 'static,
+        Req: ZeroCopySend + std::fmt::Debug,
+        Resp: ZeroCopySend + std::fmt::Debug,
+    {
+        self.build_with_header::<Req, (), Resp, ()>()
+    }
+
+    /// Build a new `NsbNode` with header types.
+    pub fn build_with_header<Req, ReqHead, Resp, RespHead>(
+        mut self,
+    ) -> Result<NsbNode<Req, ReqHead, Resp, RespHead>, NsbNodeBuildError>
+    where
+        Req: ZeroCopySend + std::fmt::Debug,
+        ReqHead: ZeroCopySend + std::fmt::Debug,
+        Resp: ZeroCopySend + std::fmt::Debug,
+        RespHead: ZeroCopySend + std::fmt::Debug,
     {
         let node = NodeBuilder::new()
             .config(&self.config)
@@ -86,22 +95,23 @@ impl NsbNodeBuilder {
 
         let service = node
             .service_builder(&Self::service_name(self.id)?)
-            .publish_subscribe::<P>()
-            .max_publishers(self.neighboors.len())
-            .max_subscribers(1)
-            .user_header::<H>()
-            .open_or_create()
-            .map_err(NsbNodeBuildError::ServiceOpenOrCreationFailure)?;
-
-        let inbox = service
-            .subscriber_builder()
+            .request_response::<Req, Resp>()
+            .request_user_header::<ReqHead>()
+            .response_user_header::<RespHead>()
+            .max_servers(1)
+            .max_clients(self.neighbors.len())
             .create()
-            .map_err(NsbNodeBuildError::SubscriberCreationFailure)?;
+            .map_err(NsbNodeBuildError::ServiceCreateError)?;
 
-        let mut outboxes = Vec::with_capacity(self.neighboors.len());
+        let server = service
+            .server_builder()
+            .create()
+            .map_err(NsbNodeBuildError::ServerCreateError)?;
+
+        let mut neighbors = Vec::with_capacity(self.neighbors.len());
         // Make neighboors list ordered so binary search is possible.
-        self.neighboors.sort();
-        for n in self.neighboors {
+        self.neighbors.sort();
+        for n in self.neighbors {
             // Attempt `max_attempts` times to connect to the neighbors.
             let max_attempts: u64 = 10;
             let mut attempts: u64 = 1;
@@ -109,10 +119,11 @@ impl NsbNodeBuilder {
             let service = loop {
                 let service_result = node
                     .service_builder(&Self::service_name(n)?)
-                    .publish_subscribe::<P>()
-                    .user_header::<H>()
+                    .request_response::<Req, Resp>()
+                    .request_user_header::<ReqHead>()
+                    .response_user_header::<RespHead>()
                     .open()
-                    .map_err(NsbNodeBuildError::ServiceOpenFailure);
+                    .map_err(NsbNodeBuildError::ServiceOpenError);
 
                 // If max attempts reacher "it is what it is"
                 if attempts == max_attempts {
@@ -128,39 +139,46 @@ impl NsbNodeBuilder {
                     .map_err(NsbNodeBuildError::WaitFailure)?;
             };
 
-            let sender = service
-                .publisher_builder()
+            let client = service
+                .client_builder()
                 .create()
-                .map_err(NsbNodeBuildError::PublisherCreationFailure)?;
+                .map_err(NsbNodeBuildError::ClientCreateError)?;
 
-            outboxes.push(NsbOutbox { to: n, sender });
+            neighbors.push(NsbNeighboorClient {
+                neigh_id: n,
+                client,
+            });
         }
 
         Ok(NsbNode {
             id: self.id,
             node,
-            inbox,
-            outboxes,
+            server,
+            neighbors,
         })
     }
 }
 
 /// A node that implements `broadcast` by using neighbor sets.
-pub struct NsbNode<P, H>
+pub struct NsbNode<Req, ReqHead, Resp, RespHead>
 where
-    P: ZeroCopySend + std::fmt::Debug + 'static,
-    H: ZeroCopySend + std::fmt::Debug + 'static,
+    Req: ZeroCopySend + std::fmt::Debug,
+    ReqHead: ZeroCopySend + std::fmt::Debug,
+    Resp: ZeroCopySend + std::fmt::Debug,
+    RespHead: ZeroCopySend + std::fmt::Debug,
 {
     id: usize,
     node: Node<ipc::Service>,
-    inbox: Subscriber<ipc::Service, P, H>,
-    outboxes: Vec<NsbOutbox<P, H>>,
+    server: Server<ipc::Service, Req, ReqHead, Resp, RespHead>,
+    neighbors: Vec<NsbNeighboorClient<Req, ReqHead, Resp, RespHead>>,
 }
 
-impl<P, H> NsbNode<P, H>
+impl<Req, ReqHead, Resp, RespHead> NsbNode<Req, ReqHead, Resp, RespHead>
 where
-    P: ZeroCopySend + std::fmt::Debug + 'static,
-    H: ZeroCopySend + std::fmt::Debug + 'static,
+    Req: ZeroCopySend + std::fmt::Debug,
+    ReqHead: ZeroCopySend + std::fmt::Debug,
+    Resp: ZeroCopySend + std::fmt::Debug,
+    RespHead: ZeroCopySend + std::fmt::Debug,
 {
     /// Returns the node id.
     pub fn id(&self) -> usize {
@@ -173,48 +191,55 @@ where
     }
 
     /// Returns the publisher service probvided by the node.
-    pub fn inbox(&self) -> &Subscriber<ipc::Service, P, H> {
-        &self.inbox
+    pub fn server(&self) -> &Server<ipc::Service, Req, ReqHead, Resp, RespHead> {
+        &self.server
     }
 
-    /// Return all `NsbOutbox`'es corresponding to all neighboors of the node.
-    pub fn outboxes(&self) -> &[NsbOutbox<P, H>] {
-        &self.outboxes
+    /// Return all `NsbNeighboorClient`'s corresponding to all neighboors of the node.
+    pub fn neighbors(&self) -> &[NsbNeighboorClient<Req, ReqHead, Resp, RespHead>] {
+        &self.neighbors
     }
 
-    /// Return the `NsbOutbox` corresponding to neighboors of id `dest_id` of the node.
+    /// Return the `NsbNeighboorClient` corresponding to neighboors of id `dest_id` of the node.
     /// Returns `None` if no neighboor of id `dest_id` was found.
-    pub fn outbox(&self, dest_id: &usize) -> Option<&NsbOutbox<P, H>> {
+    pub fn neighboor(
+        &self,
+        dest_id: &usize,
+    ) -> Option<&NsbNeighboorClient<Req, ReqHead, Resp, RespHead>> {
         let outbox_idx = self
-            .outboxes
-            .binary_search_by_key(dest_id, |outbox| outbox.to)
+            .neighbors
+            .binary_search_by_key(dest_id, |outbox| outbox.neigh_id)
             .ok()?;
-        Some(&self.outboxes[outbox_idx])
+        Some(&self.neighbors[outbox_idx])
     }
 }
 
 /// A neighboor of an node of the Nsb network.
-pub struct NsbOutbox<P, H>
+pub struct NsbNeighboorClient<Req, ReqHead, Resp, RespHead>
 where
-    P: ZeroCopySend + std::fmt::Debug + 'static,
-    H: ZeroCopySend + std::fmt::Debug + 'static,
+    Req: ZeroCopySend + std::fmt::Debug,
+    ReqHead: ZeroCopySend + std::fmt::Debug,
+    Resp: ZeroCopySend + std::fmt::Debug,
+    RespHead: ZeroCopySend + std::fmt::Debug,
 {
-    to: usize,
-    sender: Publisher<ipc::Service, P, H>,
+    neigh_id: usize,
+    client: Client<ipc::Service, Req, ReqHead, Resp, RespHead>,
 }
 
-impl<P, H> NsbOutbox<P, H>
+impl<Req, ReqHead, Resp, RespHead> NsbNeighboorClient<Req, ReqHead, Resp, RespHead>
 where
-    P: ZeroCopySend + std::fmt::Debug + 'static,
-    H: ZeroCopySend + std::fmt::Debug + 'static,
+    Req: ZeroCopySend + std::fmt::Debug,
+    ReqHead: ZeroCopySend + std::fmt::Debug,
+    Resp: ZeroCopySend + std::fmt::Debug,
+    RespHead: ZeroCopySend + std::fmt::Debug,
 {
     /// Returns the neighboor id.
-    pub fn destination(&self) -> usize {
-        self.to
+    pub fn id(&self) -> usize {
+        self.neigh_id
     }
 
     /// Returns the subscriber service provided by the neighboor.
-    pub fn sender(&self) -> &Publisher<ipc::Service, P, H> {
-        &self.sender
+    pub fn client(&self) -> &Client<ipc::Service, Req, ReqHead, Resp, RespHead> {
+        &self.client
     }
 }

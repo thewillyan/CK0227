@@ -22,6 +22,19 @@ struct Cli {
     interval: u64,
 }
 
+enum LogAction {
+    Send,
+    Receive,
+}
+
+fn log(node_id: usize, action: &LogAction, payload: &PingPongPayload, header: &PingPongHeader) {
+    let sep_char = match action {
+        LogAction::Send => "→",
+        LogAction::Receive => "←",
+    };
+    println!("[n{}] {} {} [{}]", node_id, sep_char, payload, header);
+}
+
 fn main() -> anyhow::Result<()> {
     let mut msg_id: u64 = 0;
     let cli = Cli::parse();
@@ -30,21 +43,29 @@ fn main() -> anyhow::Result<()> {
     println!("[n{}] Starting...", cli.id);
     let nsb_node = NsbNodeBuilder::new(cli.id)
         .with_neighboors(cli.neighboors)
-        .build::<PingPongPayload, PingPongHeader>()?;
+        .build_with_header::<PingPongPayload, PingPongHeader, PingPongPayload, PingPongHeader>()?;
 
     if cli.start_gossip {
         // Send ping to all nodes
-        for outbox in nsb_node.outboxes() {
-            println!("[n{}] Ping {}", cli.id, outbox.destination());
-            let mut sample = outbox.sender().loan_uninit()?;
+        for neigh in nsb_node.neighbors() {
+            let mut sample = neigh.client().loan_uninit()?;
 
             // Write header
             sample.user_header_mut().msg_id = msg_id;
             sample.user_header_mut().src_id = cli.id;
-            sample.user_header_mut().dst_id = outbox.destination();
+            sample.user_header_mut().dst_id = neigh.id();
             sample.user_header_mut().answering_to = None;
 
             let sample = sample.write_payload(PingPongPayload::Ping);
+
+            // Log basic info
+            log(
+                cli.id,
+                &LogAction::Send,
+                sample.payload(),
+                sample.user_header(),
+            );
+
             sample.send()?;
             msg_id += 1;
         }
@@ -52,24 +73,40 @@ fn main() -> anyhow::Result<()> {
 
     // Start listening for messanges
     while nsb_node.inner_node().wait(interval).is_ok() {
-        while let Some(sample) = nsb_node.inbox().receive()? {
+        while let Some(sample) = nsb_node.server().receive()? {
             let header = sample.user_header();
-            println!("[n{}] Pong from n{}", cli.id, header.src_id);
+            let payload = sample.payload();
+
+            // Log basic info
+            log(cli.id, &LogAction::Receive, payload, header);
 
             // Send Ping again, after Pong.
-            let outbox = nsb_node
-                .outbox(&header.src_id)
+            let neigh = nsb_node
+                .neighboor(&header.src_id)
                 .expect("Should not receive a message from a non-neighbor node.");
 
-            let mut sender_sample = outbox.sender().loan_uninit()?;
+            let mut client_sample = neigh.client().loan_uninit()?;
 
-            sender_sample.user_header_mut().msg_id = msg_id;
-            sender_sample.user_header_mut().src_id = header.dst_id;
-            sender_sample.user_header_mut().dst_id = header.src_id;
-            sender_sample.user_header_mut().answering_to = Some(header.msg_id);
+            client_sample.user_header_mut().msg_id = msg_id;
+            client_sample.user_header_mut().src_id = header.dst_id;
+            client_sample.user_header_mut().dst_id = header.src_id;
+            client_sample.user_header_mut().answering_to = Some(header.msg_id);
 
-            let sender_sample = sender_sample.write_payload(PingPongPayload::Ping);
-            sender_sample.send()?;
+            let send_payload = match payload {
+                PingPongPayload::Ping => PingPongPayload::Pong,
+                PingPongPayload::Pong => PingPongPayload::Ping,
+            };
+            let client_sample = client_sample.write_payload(send_payload);
+
+            // Log basic info
+            log(
+                cli.id,
+                &LogAction::Send,
+                client_sample.payload(),
+                client_sample.user_header(),
+            );
+
+            client_sample.send()?;
             msg_id += 1;
         }
     }
