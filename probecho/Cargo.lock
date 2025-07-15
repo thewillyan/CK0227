@@ -580,6 +580,7 @@ dependencies = [
  "anyhow",
  "clap",
  "iceoryx2",
+ "iceoryx2-bb-container",
  "nix",
  "thiserror",
 ]

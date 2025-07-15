@@ -2,7 +2,7 @@ use clap::Parser;
 use std::time::Duration;
 
 use probecho::data::{PingPongHeader, PingPongPayload};
-use probecho::process::NsbNodeBuilder;
+use probecho::process::nsb::NsbNodeBuilder;
 
 /// Runs a Graphnet Node process.
 #[derive(Parser, Debug)]
