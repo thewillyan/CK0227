@@ -5,6 +5,12 @@ pub type MemShareableMatrix<T, const M: usize, const N: usize> =
     FixedSizeVec<FixedSizeVec<T, N>, M>;
 pub type MemShareableAdjMatrix<const N: usize> = MemShareableMatrix<bool, N, N>;
 
+/// Represents a header wich contains a destination id of the message.
+pub trait DestinationHeader {
+    /// Returns the id of the destination node.
+    fn destination(&self) -> usize;
+}
+
 /// A simple payload header.
 ///
 /// Fields:
@@ -16,6 +22,12 @@ pub type MemShareableAdjMatrix<const N: usize> = MemShareableMatrix<bool, N, N>;
 pub struct SimpleHeader {
     pub src_id: usize,
     pub dst_id: usize,
+}
+
+impl DestinationHeader for SimpleHeader {
+    fn destination(&self) -> usize {
+        self.dst_id
+    }
 }
 
 /// An request of the topogoly of an node.
