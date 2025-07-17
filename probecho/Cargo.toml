@@ -18,3 +18,7 @@ path = "bin/ping_pong.rs"
 [[bin]]
 name = "ping-pong-node"
 path = "bin/ping_pong_node.rs"
+
+[[bin]]
+name = "stb-simulation"
+path = "bin/stb_sim.rs"

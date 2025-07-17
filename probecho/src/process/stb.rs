@@ -22,7 +22,7 @@ use iceoryx2::{
 use thiserror::Error;
 
 use crate::data::{
-    DestinationHeader, MemShareableAdjMatrix, SimpleHeader, TopologyReq, TopologyResp,
+    MemShareableAdjMatrix, SimpleHeader, TopologyReq, TopologyResp, adjacency_matrix,
 };
 
 /// Represents all possible failures when building or operating an STB node
@@ -328,7 +328,7 @@ impl<const NUM_NODES: usize> TopologyUnawareStbNode<NUM_NODES> {
         self.state = UnawareState::GatheringLocalTopology {
             origin_req,
             pending_responses,
-            curr_topology: MemShareableAdjMatrix::default(),
+            curr_topology: adjacency_matrix(),
         };
         Ok(())
     }
@@ -682,8 +682,8 @@ where
         header: ReqHeader,
     ) -> Result<StbPendingResponse<Req, ReqHeader, Resp, RespHeader>, StbNodeError> {
         let neigh = self.neighbors.binary_search_by_key(dst_id, |n| n.id);
-        let client = match neigh {
-            Ok(idx) => &self.neighbors[idx].client,
+        let (node_id, client) = match neigh {
+            Ok(idx) => (idx, &self.neighbors[idx].client),
             Err(_) => {
                 return Err(StbNodeError::OperationError(format!(
                     "Could not find a neighboor of {} with id {}",
@@ -697,6 +697,7 @@ where
         let request = request.write_payload(data);
         let pending_resp = request.send().map_err(StbNodeError::ReqSendError)?;
         Ok(StbPendingResponse {
+            node_id,
             inner: pending_resp,
         })
     }
@@ -706,28 +707,34 @@ impl<Req, ReqHeader, Resp, RespHeader, const NUM_NODES: usize>
     TopologyAwareStbNode<Req, ReqHeader, Resp, RespHeader, NUM_NODES>
 where
     Req: fmt::Debug + ZeroCopySend,
-    ReqHeader: fmt::Debug + ZeroCopySend + DestinationHeader,
+    ReqHeader: fmt::Debug + ZeroCopySend,
     Resp: fmt::Debug + ZeroCopySend,
     RespHeader: fmt::Debug + ZeroCopySend,
 {
     /// Sends a message to the destination prescribed on the header.
     /// In this case the destination does not need to be neighboor of the node.
-    pub fn send(
+    ///
+    /// Parameters:
+    /// - `data`: The request data
+    /// - `target`: The id of the final destination
+    /// - `header_builder`: A function that receives the source and destination id's of nodes in
+    ///    the path to the target and builds a header.
+    pub fn send<F: FnOnce(usize, usize) -> ReqHeader>(
         &self,
         data: Req,
-        header: ReqHeader,
+        target: usize,
+        header_builder: F,
     ) -> Result<StbPendingResponse<Req, ReqHeader, Resp, RespHeader>, StbNodeError> {
-        let dst = header.destination();
-
-        if let Some(next_node) = &self.shortest_path_next[dst] {
-            self.send_to_neighboor(next_node, data, header)
+        if let Some(next_node) = self.shortest_path_next[target] {
+            let header = header_builder(self.id, next_node);
+            self.send_to_neighboor(&next_node, data, header)
         } else {
-            let err = if dst == self.id {
+            let err = if target == self.id {
                 StbNodeError::OperationError("Can't send message to itself!".to_owned())
             } else {
                 StbNodeError::OperationError(format!(
                     "Node {} is unreachable from node {}",
-                    dst, self.id
+                    target, self.id
                 ))
             };
             Err(err)
@@ -782,6 +789,7 @@ where
     Resp: fmt::Debug + ZeroCopySend,
     RespHeader: fmt::Debug + ZeroCopySend,
 {
+    node_id: usize,
     inner: PendingResponse<ipc::Service, Req, ReqHeader, Resp, RespHeader>,
 }
 
@@ -792,6 +800,21 @@ where
     Resp: fmt::Debug + ZeroCopySend,
     RespHeader: fmt::Debug + ZeroCopySend,
 {
+    /// Returns the id of the node responsible for answering this message.
+    pub fn node_id(&self) -> usize {
+        self.node_id
+    }
+
+    /// Gets the header of the message.
+    pub fn header(&self) -> &ReqHeader {
+        self.inner.user_header()
+    }
+
+    /// Gets the data of the message.
+    pub fn data(&self) -> &Req {
+        self.inner.payload()
+    }
+
     /// Tries to receive the pending response.
     pub fn receive(&self) -> Result<Option<StbRespData<Resp, RespHeader>>, StbNodeError> {
         match self.inner.receive() {

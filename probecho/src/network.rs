@@ -1,4 +1,6 @@
 use std::collections::HashSet;
+
+use clap::ValueEnum;
 use thiserror::Error;
 
 type Matrix<T, const M: usize, const N: usize> = [[T; N]; M];
@@ -91,8 +93,8 @@ impl<const N: usize> Topology<N> {
 
 /// Classic topology types that can be used as base to build a new `Topology` using the
 /// `TopologyBuilder`.
-#[derive(Clone, Debug, Default)]
-enum TopologyKind {
+#[derive(Clone, Debug, Default, ValueEnum)]
+pub enum TopologyKind {
     #[default]
     Null,
     Full,
@@ -153,6 +155,12 @@ impl TopologyBuilder {
             base: TopologyKind::Star,
             deltas: HashSet::new(),
         }
+    }
+
+    /// Sets the "base" (start condition) of the topology.
+    pub fn with_base(mut self, topology: TopologyKind) -> Self {
+        self.base = topology;
+        self
     }
 
     /// Connects `n1` to `n2` and `n2` to `n1` since network connections usually are two-sided.

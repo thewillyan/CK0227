@@ -5,10 +5,35 @@ pub type MemShareableMatrix<T, const M: usize, const N: usize> =
     FixedSizeVec<FixedSizeVec<T, N>, M>;
 pub type MemShareableAdjMatrix<const N: usize> = MemShareableMatrix<bool, N, N>;
 
-/// Represents a header wich contains a destination id of the message.
-pub trait DestinationHeader {
-    /// Returns the id of the destination node.
-    fn destination(&self) -> usize;
+pub fn adjacency_matrix<const N: usize>() -> MemShareableAdjMatrix<N> {
+    let mut line = FixedSizeVec::new();
+    line.extend_from_slice(&[false; N]);
+
+    let mut m = FixedSizeVec::new();
+    for _ in 0..N {
+        m.push(line.clone());
+    }
+    m
+}
+
+pub trait PathHeader {
+    /// Returns the node id of the origin (first sender) of the message.
+    fn origin(&self) -> usize;
+    /// Returns the node id of the target (final destination) of the message.
+    fn target(&self) -> usize;
+    /// Returns the sender of the message.
+    fn src(&self) -> usize;
+    /// Returns the destination of the message.
+    fn dst(&self) -> usize;
+
+    /// Returns a mutable reference to the node id of the origin (first sender) of the message.
+    fn origin_mut(&mut self) -> &mut usize;
+    /// Returns a mutable reference to the node id of the target (final destination) of the message.
+    fn target_mut(&mut self) -> &mut usize;
+    /// Returns a mutable reference to the sender of the message.
+    fn src_mut(&mut self) -> &mut usize;
+    /// Returns a mutable reference to the destination of the message.
+    fn dst_mut(&mut self) -> &mut usize;
 }
 
 /// A simple payload header.
@@ -16,17 +41,66 @@ pub trait DestinationHeader {
 /// Fields:
 /// - `src_id`: the source node id of the message;
 /// - `dst_id`: the destination node id of the message.
-#[derive(Debug, Clone, ZeroCopySend)]
+/// - `target`: the final target of the message.
+#[derive(Debug, Clone, Default, ZeroCopySend)]
 #[type_name("SimpleHeader")]
 #[repr(C)]
 pub struct SimpleHeader {
     pub src_id: usize,
     pub dst_id: usize,
+    pub target: usize,
+    pub origin: usize,
 }
 
-impl DestinationHeader for SimpleHeader {
-    fn destination(&self) -> usize {
-        self.dst_id
+impl SimpleHeader {
+    /// Swaps the `src_id` <-> `dst_id` and `target` <-> `origin` of the header, effectively
+    /// creating a "reply" header.
+    pub fn into_reply(mut self) -> Self {
+        std::mem::swap(&mut self.src_id, &mut self.dst_id);
+        std::mem::swap(&mut self.origin, &mut self.target);
+        self
+    }
+}
+
+impl PathHeader for SimpleHeader {
+    fn origin(&self) -> usize {
+        self.origin
+    }
+
+    fn target(&self) -> usize {
+        self.target
+    }
+
+    fn src(&self) -> usize {
+        self.src_id
+    }
+    fn dst(&self) -> usize {
+        self.src_id
+    }
+
+    fn origin_mut(&mut self) -> &mut usize {
+        &mut self.origin
+    }
+
+    fn target_mut(&mut self) -> &mut usize {
+        &mut self.target
+    }
+
+    fn src_mut(&mut self) -> &mut usize {
+        &mut self.src_id
+    }
+
+    fn dst_mut(&mut self) -> &mut usize {
+        &mut self.dst_id
+    }
+}
+
+impl std::fmt::Display for SimpleHeader {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "src:{}→dst:{} (origin:{}→target:{})",
+            self.src_id, self.dst_id, self.origin, self.target
+        ))
     }
 }
 
