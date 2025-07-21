@@ -2,6 +2,9 @@ use std::{process::Command, time::Duration};
 
 use clap::{Args, Parser, Subcommand};
 
+use nix::sys::signal::{Signal, kill};
+use nix::unistd::Pid;
+
 use probecho::{
     data::{PingPongPayload, SimpleHeader},
     network::{TopologyBuilder, TopologyKind},
@@ -37,7 +40,7 @@ struct NodeArgs {
     #[arg(short, long, default_value_t = false)]
     start_gossip: bool,
     /// Sets the interval, in milliseconds, for searching the inbox
-    #[arg(long, default_value_t = 500, value_name = "MILLIS")]
+    #[arg(long, default_value_t = 200, value_name = "MILLIS")]
     interval: u64,
 }
 
@@ -118,8 +121,8 @@ fn node(args: NodeArgs) -> Result<(), StbNodeError> {
                         let header = resp.header().clone();
                         log(args.id, &data, &header);
                         request.reply(data, header)?;
+                        state = WorkerState::Responded;
                     }
-                    state = WorkerState::Responded;
                 }
                 WorkerState::Responded => break,
             }
@@ -157,6 +160,7 @@ fn handle_request(
             header.dst_id = dst_id;
             header
         })?;
+        log(id, pending.data(), pending.header());
         WorkerState::PendingResponse {
             request: req,
             pending,
@@ -174,7 +178,6 @@ fn manager(args: ManagerArgs) -> anyhow::Result<()> {
     let mut nodes_procs = Vec::with_capacity(NUM_NODES);
 
     for id in 0..NUM_NODES {
-        eprintln!("id = {id}");
         let neighboors = topology
             .connections_unchecked(id)
             .iter()
@@ -202,8 +205,14 @@ fn manager(args: ManagerArgs) -> anyhow::Result<()> {
         nodes_procs.push(cmd.spawn()?);
     }
 
-    for mut n in nodes_procs {
-        n.wait()?;
+    // wait for the gossiper to finish
+    nodes_procs[0].wait()?;
+
+    // kill other processes that dont have finished yet
+    for p in nodes_procs.iter_mut().skip(1) {
+        if p.try_wait()?.is_none() {
+            kill(Pid::from_raw(p.id() as i32), Signal::SIGTERM)?;
+        }
     }
     Ok(())
 }

@@ -12,7 +12,9 @@ use iceoryx2::{
     prelude::*,
     response::Response,
     service::{
-        builder::request_response::{RequestResponseCreateError, RequestResponseOpenError},
+        builder::request_response::{
+            RequestResponseCreateError, RequestResponseOpenError, RequestResponseOpenOrCreateError,
+        },
         port_factory::{
             client::ClientCreateError, request_response::PortFactory, server::ServerCreateError,
         },
@@ -32,6 +34,8 @@ pub enum StbNodeError {
     NodeCreationFailure(#[from] NodeCreationFailure),
     #[error("Invalid service name: {0}")]
     InvalidServiceName(#[from] ServiceNameError),
+    #[error("Service openning or creation failed: {0}")]
+    ServiceOpenOrCreateError(#[from] RequestResponseOpenOrCreateError),
     #[error("Service creation failed: {0}")]
     ServiceCreateError(#[from] RequestResponseCreateError),
     #[error("Service opening failed: {0}")]
@@ -325,10 +329,18 @@ impl<const NUM_NODES: usize> TopologyUnawareStbNode<NUM_NODES> {
             pending_responses.push(sample.send()?);
         }
 
+        // initialize topology with current node's connections
+        let mut curr_topology = adjacency_matrix();
+        for neigh_id in self.neighbors.iter().map(|neigh| neigh.id) {
+            // add both directions for undirected graph
+            curr_topology[self.id][neigh_id] = true;
+            curr_topology[neigh_id][self.id] = true;
+        }
+
         self.state = UnawareState::GatheringLocalTopology {
             origin_req,
             pending_responses,
-            curr_topology: adjacency_matrix(),
+            curr_topology,
         };
         Ok(())
     }
