@@ -13,6 +13,8 @@ use probecho::{
     },
 };
 
+const NUM_NODES: usize = 5;
+
 #[derive(Parser)]
 #[command(about)]
 struct Cli {
@@ -49,8 +51,6 @@ struct ManagerArgs {
     #[arg(short, long, value_enum)]
     topology: TopologyKind,
 }
-
-const NUM_NODES: usize = 5;
 
 enum WorkerState {
     WaitingRequest,
