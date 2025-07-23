@@ -18,10 +18,13 @@ cargo build --bin ping-pong-node && cargo run --bin ping-pong
 
 ## Spanning Tree Broadcast Simulation
 
-Simula um Spanning Tree Broadcast com 5 nós em uma topologia arbtrária.
+Simula um Spanning Tree Broadcast com 8 nós em uma topologia arbtrária onde o nó iniciador
+manda uma menssagem para um nó reptor.
+
+A simulação termina quando o nó iniciador recebe uma resposta do receptor.
 
 A quantidade de nós deve ser uma constante por isso deve ser alterada no binário (por hora).
 
 ```shell
-cargo run --bin stb-simulation manager -t ring
+cargo run --bin stb-simulation manager -t ring -d 5
 ```
