@@ -1,6 +1,7 @@
+use std::ops::Range;
 use std::{process::Command, time::Duration};
 
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 
 use nix::sys::signal::{Signal, kill};
 use nix::unistd::Pid;
@@ -13,8 +14,28 @@ use probecho::{
     },
 };
 
-const NUM_NODES: usize = 5;
+const NUM_NODES: usize = 8;
+const NID_RANGE: Range<usize> = 0..NUM_NODES;
 
+fn nid_in_range(s: &str) -> Result<usize, String> {
+    let id: usize = s
+        .parse()
+        .map_err(|_| format!("`{s}` isn't a valid node id"))?;
+
+    if NID_RANGE.contains(&id) {
+        Ok(id)
+    } else {
+        Err(format!(
+            "id out of range {}-{}",
+            NID_RANGE.start, NID_RANGE.end
+        ))
+    }
+}
+
+/// Simulates a Spanning Tree Broadcast with 8 nodes where the initiator node sends a message
+/// to an arbtrary node.
+///
+/// The simulation ends when the source receives the response from the destination.
 #[derive(Parser)]
 #[command(about)]
 struct Cli {
@@ -26,30 +47,54 @@ struct Cli {
 enum Commands {
     /// Runs a Spanning Tree Broadcast Node process.
     Node(NodeArgs),
-    /// Runs a Spanning Tree Broadcast Simulation Manager.
+    /// Runs a Spanning Tree Broadcast Simulation Manager (start the simulation).
     Manager(ManagerArgs),
 }
 
 #[derive(Args, Debug)]
 struct NodeArgs {
     /// Node ID
-    #[arg(short, long, value_name = "ID")]
+    #[arg(short, long, value_name = "ID", value_parser = nid_in_range)]
     id: usize,
     /// Sets the node neighboors
-    #[arg(short, long, value_delimiter = ',')]
+    #[arg(short, long, value_delimiter = ',', value_parser = nid_in_range)]
     neighboors: Vec<usize>,
-    /// Sets if the node should start the gossip
-    #[arg(short, long, default_value_t = false)]
-    start_gossip: bool,
+    /// Set's to which node to send a ping (in this case the node is the initiator)
+    #[arg(short, long, value_parser = nid_in_range)]
+    ping: Option<usize>,
     /// Sets the interval, in milliseconds, for searching the inbox
-    #[arg(long, default_value_t = 200, value_name = "MILLIS")]
+    #[arg(long, default_value_t = 100, value_name = "MILLIS")]
     interval: u64,
+}
+
+#[derive(Debug, Clone, ValueEnum)]
+enum TopologyArg {
+    Full,
+    Ring,
+    Star,
+}
+
+impl Into<TopologyKind> for TopologyArg {
+    fn into(self) -> TopologyKind {
+        match self {
+            Self::Full => TopologyKind::Full,
+            Self::Ring => TopologyKind::Ring,
+            Self::Star => TopologyKind::Star,
+        }
+    }
 }
 
 #[derive(Args, Debug)]
 struct ManagerArgs {
+    /// Which node is the initiator
+    #[arg(short, long, default_value_t = 0, value_parser = nid_in_range)]
+    initiator: usize,
+    /// To which node the initiator should send the message
+    #[arg(short, long, value_parser = nid_in_range)]
+    destination: usize,
+    /// What is the topology of the network
     #[arg(short, long, value_enum)]
-    topology: TopologyKind,
+    topology: TopologyArg,
 }
 
 enum WorkerState {
@@ -62,14 +107,19 @@ enum WorkerState {
 }
 
 fn log(id: usize, data: &PingPongPayload, header: &SimpleHeader) {
-    let sep_char = if id == header.src_id {
+    if id == header.src_id {
         // is sending
-        "→"
+        println!(
+            "[n{}] {} → n{} (orgin:{}→target:{})",
+            id, data, header.dst_id, header.origin, header.target
+        );
     } else {
         // is receiving
-        "←"
+        println!(
+            "[n{}] {} ← n{} (orgin:{}→target:{})",
+            id, data, header.src_id, header.origin, header.target
+        );
     };
-    println!("[n{}] {} {} [{}]", id, sep_char, data, header);
 }
 
 fn node(args: NodeArgs) -> Result<(), StbNodeError> {
@@ -78,11 +128,10 @@ fn node(args: NodeArgs) -> Result<(), StbNodeError> {
         .with_neighbors(args.neighboors)
         .build::<NUM_NODES>()?;
 
-    if args.start_gossip {
+    if let Some(target) = args.ping {
         // We're the initiator process
         let node =
             node.run_initiator::<PingPongPayload, SimpleHeader, PingPongPayload, SimpleHeader>()?;
-        let target = (args.id + NUM_NODES / 2) % NUM_NODES;
 
         // Send ping to a far away node
         let pending = node.send(PingPongPayload::Ping, target, |src_id, dst_id| {
@@ -112,13 +161,18 @@ fn node(args: NodeArgs) -> Result<(), StbNodeError> {
             match &state {
                 WorkerState::WaitingRequest => {
                     if let Some(req) = node.receive()? {
+                        log(args.id, req.data(), req.header());
                         state = handle_request(args.id, &node, req)?;
                     }
                 }
                 WorkerState::PendingResponse { request, pending } => {
                     if let Some(resp) = pending.receive()? {
+                        log(args.id, resp.data(), resp.header());
                         let data = resp.data().clone();
-                        let header = resp.header().clone();
+                        let mut header = resp.header().clone();
+                        header.src_id = args.id;
+                        header.dst_id = request.header().src_id;
+
                         log(args.id, &data, &header);
                         request.reply(data, header)?;
                         state = WorkerState::Responded;
@@ -173,7 +227,7 @@ fn handle_request(
 fn manager(args: ManagerArgs) -> anyhow::Result<()> {
     let bin_path = std::env::current_exe().unwrap();
     let topology = TopologyBuilder::new()
-        .with_base(args.topology)
+        .with_base(args.topology.into())
         .build::<NUM_NODES>()?;
     let mut nodes_procs = Vec::with_capacity(NUM_NODES);
 
@@ -199,8 +253,8 @@ fn manager(args: ManagerArgs) -> anyhow::Result<()> {
             .arg("-n")
             .arg(neighboors);
 
-        if id == 0 {
-            cmd.arg("-s");
+        if id == args.initiator {
+            cmd.arg("-p").arg(args.destination.to_string());
         }
         nodes_procs.push(cmd.spawn()?);
     }
