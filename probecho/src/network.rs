@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+
 use thiserror::Error;
 
 type Matrix<T, const M: usize, const N: usize> = [[T; N]; M];
@@ -92,7 +93,7 @@ impl<const N: usize> Topology<N> {
 /// Classic topology types that can be used as base to build a new `Topology` using the
 /// `TopologyBuilder`.
 #[derive(Clone, Debug, Default)]
-enum TopologyKind {
+pub enum TopologyKind {
     #[default]
     Null,
     Full,
@@ -107,12 +108,16 @@ impl TopologyKind {
             Self::Null => [[false; N]; N],
             Self::Full => with_diag([[true; N]; N], |_| false),
             Self::Ring => build_matrix(|i, j| {
-                let is_left_neigh = if i == 0 { j == N - 1 } else { i - 1 == j };
-                let is_right_neigh = ((i + 1) % N) == j;
-
-                is_left_neigh || is_right_neigh
+                i != j && {
+                    let is_left_neigh = if i == 0 { j == N - 1 } else { i - 1 == j };
+                    let is_right_neigh = ((i + 1) % N) == j;
+                    is_left_neigh || is_right_neigh
+                }
             }),
-            Self::Star => build_matrix(|i, j| i == N / 2 && i != j),
+            Self::Star => build_matrix(|i, j| {
+                let center = N / 2;
+                (i == center || j == center) && i != j
+            }),
         }
     }
 }
@@ -153,6 +158,12 @@ impl TopologyBuilder {
             base: TopologyKind::Star,
             deltas: HashSet::new(),
         }
+    }
+
+    /// Sets the "base" (start condition) of the topology.
+    pub fn with_base(mut self, topology: TopologyKind) -> Self {
+        self.base = topology;
+        self
     }
 
     /// Connects `n1` to `n2` and `n2` to `n1` since network connections usually are two-sided.
