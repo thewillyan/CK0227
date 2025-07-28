@@ -42,7 +42,7 @@ fn main() -> anyhow::Result<()> {
 
     println!("[n{}] Starting...", cli.id);
     let nsb_node = NsbNodeBuilder::new(cli.id)
-        .with_neighboors(cli.neighboors)
+        .with_neighbors(cli.neighboors)
         .build_with_header::<PingPongPayload, PingPongHeader, PingPongPayload, PingPongHeader>()?;
 
     if cli.start_gossip {
@@ -82,7 +82,7 @@ fn main() -> anyhow::Result<()> {
 
             // Send Ping again, after Pong.
             let neigh = nsb_node
-                .neighboor(&header.src_id)
+                .neighbor(&header.src_id)
                 .expect("Should not receive a message from a non-neighbor node.");
 
             let mut client_sample = neigh.client().loan_uninit()?;
