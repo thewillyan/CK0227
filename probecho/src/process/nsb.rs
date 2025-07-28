@@ -1,16 +1,13 @@
 use std::{fmt, time::Duration};
 
 use iceoryx2::{
-    active_request::ActiveRequest,
     node::{Node, NodeBuilder, NodeCreationFailure, NodeWaitFailure},
-    pending_response::PendingResponse,
     port::{
         LoanError, ReceiveError, SendError,
         client::{Client, RequestSendError},
         server::Server,
     },
     prelude::*,
-    response::Response,
     service::{
         builder::request_response::{
             RequestResponseCreateError, RequestResponseOpenError, RequestResponseOpenOrCreateError,
@@ -52,25 +49,6 @@ pub enum NsbNodeError {
     SendError(#[from] SendError),
     #[error("Operation failed: {0}")]
     OperationError(String),
-}
-
-/// Legacy error type for backward compatibility
-#[derive(Debug, Error)]
-pub enum NsbNodeBuildError {
-    #[error(transparent)]
-    NodeCreationFailure(NodeCreationFailure),
-    #[error(transparent)]
-    InvalidServiceName(ServiceNameError),
-    #[error(transparent)]
-    ServiceCreateError(RequestResponseCreateError),
-    #[error(transparent)]
-    ServiceOpenError(RequestResponseOpenError),
-    #[error(transparent)]
-    ServerCreateError(ServerCreateError),
-    #[error(transparent)]
-    ClientCreateError(ClientCreateError),
-    #[error(transparent)]
-    WaitFailure(NodeWaitFailure),
 }
 
 /// Builder for creating an NSB node with configurable parameters (STB-like)
@@ -318,107 +296,6 @@ impl<Req, ReqHead> NsbReceivedMessage<Req, ReqHead> {
     }
 }
 
-/// An active request that is still ongoing (STB-like)
-pub struct NsbActiveRequest<Req, ReqHeader, Resp, RespHeader>
-where
-    Req: fmt::Debug + ZeroCopySend,
-    ReqHeader: fmt::Debug + ZeroCopySend,
-    Resp: fmt::Debug + ZeroCopySend,
-    RespHeader: fmt::Debug + ZeroCopySend,
-{
-    inner: ActiveRequest<ipc::Service, Req, ReqHeader, Resp, RespHeader>,
-}
-
-impl<Req, ReqHeader, Resp, RespHeader> NsbActiveRequest<Req, ReqHeader, Resp, RespHeader>
-where
-    Req: fmt::Debug + ZeroCopySend,
-    ReqHeader: fmt::Debug + ZeroCopySend,
-    Resp: fmt::Debug + ZeroCopySend,
-    RespHeader: fmt::Debug + ZeroCopySend,
-{
-    /// Gets the header of the message.
-    pub fn header(&self) -> &ReqHeader {
-        self.inner.user_header()
-    }
-
-    /// Gets the data of the message.
-    pub fn data(&self) -> &Req {
-        self.inner.payload()
-    }
-
-    /// Reply to the request.
-    pub fn reply(&self, payload: Resp, header: RespHeader) -> Result<(), NsbNodeError> {
-        let mut response = self.inner.loan_uninit()?;
-        *response.user_header_mut() = header;
-        let response = response.write_payload(payload);
-        response.send()?;
-        Ok(())
-    }
-}
-
-/// A pending response (STB-like)
-pub struct NsbPendingResponse<Req, ReqHeader, Resp, RespHeader>
-where
-    Req: fmt::Debug + ZeroCopySend,
-    ReqHeader: fmt::Debug + ZeroCopySend,
-    Resp: fmt::Debug + ZeroCopySend,
-    RespHeader: fmt::Debug + ZeroCopySend,
-{
-    inner: PendingResponse<ipc::Service, Req, ReqHeader, Resp, RespHeader>,
-}
-
-impl<Req, ReqHeader, Resp, RespHeader> NsbPendingResponse<Req, ReqHeader, Resp, RespHeader>
-where
-    Req: fmt::Debug + ZeroCopySend,
-    ReqHeader: fmt::Debug + ZeroCopySend,
-    Resp: fmt::Debug + ZeroCopySend,
-    RespHeader: fmt::Debug + ZeroCopySend,
-{
-    /// Gets the header of the message.
-    pub fn header(&self) -> &ReqHeader {
-        self.inner.user_header()
-    }
-
-    /// Gets the data of the message.
-    pub fn data(&self) -> &Req {
-        self.inner.payload()
-    }
-
-    /// Tries to receive the pending response.
-    pub fn receive(&self) -> Result<Option<NsbRespData<Resp, RespHeader>>, NsbNodeError> {
-        match self.inner.receive() {
-            Ok(Some(resp)) => Ok(Some(NsbRespData { inner: resp })),
-            Ok(None) => Ok(None),
-            Err(e) => Err(NsbNodeError::ReceiveError(e)),
-        }
-    }
-}
-
-/// The response data of a request (STB-like)
-pub struct NsbRespData<Resp, RespHeader>
-where
-    Resp: fmt::Debug + ZeroCopySend,
-    RespHeader: fmt::Debug + ZeroCopySend,
-{
-    inner: Response<ipc::Service, Resp, RespHeader>,
-}
-
-impl<Resp, RespHeader> NsbRespData<Resp, RespHeader>
-where
-    Resp: fmt::Debug + ZeroCopySend,
-    RespHeader: fmt::Debug + ZeroCopySend,
-{
-    /// Returns a reference to the header of the response.
-    pub fn header(&self) -> &RespHeader {
-        self.inner.user_header()
-    }
-
-    /// Returns a reference to the data of the response.
-    pub fn data(&self) -> &Resp {
-        self.inner.payload()
-    }
-}
-
 /// A topology-aware NSB node with STB-like request-response patterns
 pub struct TopologyAwareNsbNode<Req, ReqHead, Resp, RespHead>
 where
@@ -461,41 +338,9 @@ where
         }
     }
 
-    /// Send a message to a specific neighbor and get a pending response (STB-like)
-    pub fn send_with_response<F>(
-        &self, 
-        data: Req, 
-        neighbor_id: usize, 
-        header_fn: F
-    ) -> Result<NsbPendingResponse<Req, ReqHead, Resp, RespHead>, NsbNodeError>
-    where
-        F: FnOnce(usize, usize) -> ReqHead,
-    {
-        if let Some(neighbor) = self.inner.neighbor(&neighbor_id) {
-            let mut request = neighbor.client().loan_uninit()?;
-            *request.user_header_mut() = header_fn(self.inner.id(), neighbor_id);
-            let request = request.write_payload(data);
-            let pending_resp = request.send()?;
-            Ok(NsbPendingResponse { inner: pending_resp })
-        } else {
-            Err(NsbNodeError::OperationError(format!(
-                "Neighbor {} not found",
-                neighbor_id
-            )))
-        }
-    }
-
     /// Try to receive a message (backward compatible - returns simple message)
     pub fn receive(&self) -> Result<Option<NsbReceivedMessage<Req, ReqHead>>, NsbNodeError> {
         self.receive_simple()
-    }
-
-    /// Try to receive a message (now returns an ActiveRequest for STB-like patterns)
-    pub fn receive_request(&self) -> Result<Option<NsbActiveRequest<Req, ReqHead, Resp, RespHead>>, NsbNodeError> {
-        match self.inner.server().receive()? {
-            Some(req) => Ok(Some(NsbActiveRequest { inner: req })),
-            None => Ok(None),
-        }
     }
 
     /// Try to receive a message (simple version for backward compatibility)
