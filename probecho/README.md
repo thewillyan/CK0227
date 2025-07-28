@@ -28,3 +28,16 @@ A quantidade de nós deve ser uma constante por isso deve ser alterada no binár
 ```shell
 cargo run --bin stb-simulation manager -t ring -d 5
 ```
+
+## Broadcast using neighbor sets
+
+Simula um Broadcast com neighbor sets com 8 nós em uma topologia arbtrária onde o nó iniciador manda uma mensagem através do broadcast.
+
+A simulação NSB termina quando todos os nós completaram o algoritmo de broadcast.
+
+
+A quantidade de nós deve ser uma constante por isso deve ser alterada no binário (por hora).
+
+```shell
+cargo run --bin nsb-simulation manager -t star -i 0
+```
