@@ -22,3 +22,7 @@ path = "bin/ping_pong_node.rs"
 [[bin]]
 name = "stb-simulation"
 path = "bin/stb_sim.rs"
+
+[[bin]]
+name = "nsb-simulation"
+path = "bin/nsb_sim.rs"
